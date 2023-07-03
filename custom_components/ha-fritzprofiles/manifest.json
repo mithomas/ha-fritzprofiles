@@ -1,0 +1,10 @@
+{
+  "domain": "https://github.com/mithomas/ha-fritzprofiles",
+  "name": "AVM FRITZ!Box Access Profiles",
+  "documentation": "https://github.com/mithomas/ha-fritzprofiles",
+  "issue_tracker": "https://github.com/mithomas/ha-fritzprofiles/issues",
+  "dependencies": [],
+  "config_flow": true,
+  "codeowners": ["@mithomas"],
+  "requirements": []
+}
