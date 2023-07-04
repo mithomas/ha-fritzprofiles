@@ -1,20 +1,20 @@
 """Switch platform for AVM FRITZ!Box Access Profiles."""
-from homeassistant.components.switch import SwitchEntity
+from homeassistant.components.select import SelectEntity
 
 from .const import DEFAULT_NAME
 from .const import DOMAIN
 from .const import ICON
 from .const import SWITCH
-from .entity import HaProfilesEntity
+from .entity import HaFritzProfilesEntity
 
 
 async def async_setup_entry(hass, entry, async_add_devices):
     """Setup sensor platform."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_devices([HaProfilesBinarySwitch(coordinator, entry)])
+    async_add_devices([HaFritzDevice(coordinator, entry)])
 
 
-class HaProfilesBinarySwitch(HaProfilesEntity, SwitchEntity):
+class HaFritzDevice(HaFritzProfilesEntity, SelectEntity):
     """https://github.com/mithomas/ha-fritzprofiles switch class."""
 
     async def async_turn_on(self, **kwargs):  # pylint: disable=unused-argument

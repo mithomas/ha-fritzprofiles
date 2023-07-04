@@ -5,6 +5,7 @@
         "title": "AVM FRITZ!Box Access Profiles",
         "description": "If you need help with the configuration have a look here: https://github.com/mithomas/ha-fritzprofiles",
         "data": {
+          "url": "URL",
           "username": "Username",
           "password": "Password"
         }
@@ -15,17 +16,6 @@
     },
     "abort": {
       "single_instance_allowed": "Only a single instance is allowed."
-    }
-  },
-  "options": {
-    "step": {
-      "user": {
-        "data": {
-          "binary_sensor": "Binary sensor enabled",
-          "sensor": "Sensor enabled",
-          "switch": "Switch enabled"
-        }
-      }
     }
   }
 }

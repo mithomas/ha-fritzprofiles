@@ -8,17 +8,18 @@ import asyncio
 import logging
 from datetime import timedelta
 
+from .fritz_switch_profiles import FritzProfileSwitch
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Config
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
-from .api import HaProfilesApiClient
 from .const import CONF_PASSWORD
 from .const import CONF_USERNAME
+from .const import CONF_URL
 from .const import DOMAIN
 from .const import PLATFORMS
 from .const import STARTUP_MESSAGE
@@ -41,11 +42,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     username = entry.data.get(CONF_USERNAME)
     password = entry.data.get(CONF_PASSWORD)
+    url = entry.data.get(CONF_URL)
 
-    session = async_get_clientsession(hass)
-    client = HaProfilesApiClient(username, password, session)
+    client = FritzProfileSwitch(url, username, password)
 
-    coordinator = HaProfilesDataUpdateCoordinator(hass, client=client)
+    coordinator = HaFritzProfilesDataUpdateCoordinator(hass, client=client)
     await coordinator.async_refresh()
 
     if not coordinator.last_update_success:
@@ -64,16 +65,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     return True
 
 
-class HaProfilesDataUpdateCoordinator(DataUpdateCoordinator):
+class HaFritzProfilesDataUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage fetching data from the API."""
 
     def __init__(
         self,
         hass: HomeAssistant,
-        client: HaProfilesApiClient,
+        client: FritzProfileSwitch,
     ) -> None:
         """Initialize."""
-        self.api = client
+        self.client = client
         self.platforms = []
 
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=SCAN_INTERVAL)

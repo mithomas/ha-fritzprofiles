@@ -1,10 +1,11 @@
 {
-  "domain": "https://github.com/mithomas/ha-fritzprofiles",
-  "name": "AVM FRITZ!Box Access Profiles",
+  "domain": "ha-fritzprofiles",
+  "name": "AVM FRITZ!Box Device Access Profiles",
+  "version": "0.0.1",
   "documentation": "https://github.com/mithomas/ha-fritzprofiles",
   "issue_tracker": "https://github.com/mithomas/ha-fritzprofiles/issues",
   "dependencies": [],
   "config_flow": true,
   "codeowners": ["@mithomas"],
-  "requirements": []
+  "requirements": ["fritz-switch-profiles==1.1.5"]
 }

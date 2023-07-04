@@ -1,7 +1,7 @@
 """Constants for AVM FRITZ!Box Access Profiles."""
 # Base component constants
 NAME = "AVM FRITZ!Box Access Profiles"
-DOMAIN = "https://github.com/mithomas/ha-fritzprofiles"
+DOMAIN = "ha-fritzprofiles"
 DOMAIN_DATA = f"{DOMAIN}_data"
 VERSION = "0.0.1"
 
@@ -22,9 +22,9 @@ PLATFORMS = [BINARY_SENSOR, SENSOR, SWITCH]
 
 
 # Configuration and options
-CONF_ENABLED = "enabled"
 CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
+CONF_URL = "url"
 
 # Defaults
 DEFAULT_NAME = DOMAIN
