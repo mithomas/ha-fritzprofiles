@@ -1,5 +1,8 @@
 """HaFritzProfilesEntity class"""
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.components.select import SelectEntity
+
+from .fritz_switch_profiles import FritzProfileSwitch
 
 from .const import ATTRIBUTION
 from .const import DOMAIN
@@ -7,7 +10,7 @@ from .const import NAME
 from .const import VERSION
 
 
-class HaFritzProfilesEntity(CoordinatorEntity):
+class HaFritzProfilesEntity(CoordinatorEntity, SelectEntity):
     def __init__(self, coordinator, config_entry):
         super().__init__(coordinator)
         self.config_entry = config_entry
@@ -34,3 +37,9 @@ class HaFritzProfilesEntity(CoordinatorEntity):
             "id": str(self.coordinator.data.get("id")),
             "integration": DOMAIN,
         }
+
+    async def async_select_option(self, option: str) -> None:
+        """Change the selected option."""
+        fps = self.coordinator.client
+        fps.login()
+        fps.
