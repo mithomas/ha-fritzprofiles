@@ -31,7 +31,7 @@ class FritzProfileSwitch:
         self.fetch_device_profiles()
 
     def fetch_device_profiles(self):
-        html = lxml.html.fromstring(self.load_device_profile_data)
+        html = lxml.html.fromstring(self.load_device_profile_data())
         for i, row in enumerate(html.xpath('//table[@id="uiDevices"]/tr')):
             cell = row.xpath("td")
             if (not cell) or (len(cell) != 5):
@@ -48,8 +48,8 @@ class FritzProfileSwitch:
             id = select[0].xpath("@name")[0].split(":")[1]
             profile = select[0].xpath("option[@selected]/@value")[0]
 
-            if i == 0:
-                self.profiles = {o.xpath("@value"): o.xpath("text()") for o in select[0].xpath("option")}
+            if i == 1: # profiles only needed once
+                self.profiles = {o.get('value'): o.text_content() for o in select[0].xpath("option")}
 
             self.devices[id] = {
                         "id": id,

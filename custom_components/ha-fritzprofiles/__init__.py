@@ -34,7 +34,7 @@ async def async_setup(hass: HomeAssistant, config: Config):
     return True
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up this integration using UI."""
     if hass.data.get(DOMAIN) is None:
         hass.data.setdefault(DOMAIN, {})
@@ -82,8 +82,11 @@ class HaFritzProfilesDataUpdateCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self):
         """Update data via library."""
         try:
-            return await self.api.async_get_data()
+            _LOGGER.info("Load data")
+            await self.hass.async_add_executor_job(self.client.sync)
+            return True
         except Exception as exception:
+            _LOGGER.info("Loading failed")
             raise UpdateFailed() from exception
 
 

@@ -42,4 +42,3 @@ class HaFritzProfilesEntity(CoordinatorEntity, SelectEntity):
         """Change the selected option."""
         fps = self.coordinator.client
         fps.login()
-        fps.
