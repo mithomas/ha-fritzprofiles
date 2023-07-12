@@ -64,9 +64,7 @@ class HaFritzProfilesFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     async def _test_credentials(self, url, username, password):
         """Return true if credentials is valid."""
         try:
-            fps = FritzProfileSwitch(url, username, password)
-            await self.hass.async_add_executor_job(fps.login)
-            return fps.sid != "0000000000000000"
+            return await self.hass.async_add_executor_job(FritzProfileSwitch(url, username, password).check_credentials)
         except Exception:  # pylint: disable=broad-except
             pass
         return False

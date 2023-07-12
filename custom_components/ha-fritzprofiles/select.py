@@ -21,8 +21,8 @@ class HaFritzProfilesEntity(CoordinatorEntity, SelectEntity):
 
         self.device = device
 
-        self._attr_current_option = self.coordinator.data.profiles[self.device.profile]
-        self._attr_options = list(self.coordinator.data.profiles.values())
+        self._attr_current_option = self.coordinator.data.profiles_by_id[self.device.profile]
+        self._attr_options = list(self.coordinator.data.profiles_by_id.values())
 
 
     @property
@@ -43,8 +43,10 @@ class HaFritzProfilesEntity(CoordinatorEntity, SelectEntity):
         return ICON
 
 
-    async def async_select_option(self, option: str) -> None:
+    async def async_select_option(self, profile: str) -> None:
         """Change the selected option."""
-        fps = self.coordinator.client
-        fps.login()
-    
+        _LOGGER.info("changing profile to " + profile)
+        await self.coordinator.hass.async_add_executor_job(self.coordinator.client.set_profile, self.device.id, self.coordinator.data.profiles_by_name[profile])
+
+        self._attr_current_option = profile
+        self.async_write_ha_state()
