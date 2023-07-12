@@ -84,7 +84,7 @@ class HaFritzProfilesDataUpdateCoordinator(DataUpdateCoordinator):
         try:
             _LOGGER.info("Load data")
             await self.hass.async_add_executor_job(self.client.sync)
-            return True
+            return True # TODO: this should hold the relevant 
         except Exception as exception:
             _LOGGER.info("Loading failed")
             raise UpdateFailed() from exception

@@ -14,7 +14,7 @@ import lxml.html
 import requests
 
 
-class FritzProfileSwitch:
+class FritzProfileSwitch: # rename to prepare later factoring out
     """A (Python) script to remotely set device profiles of an AVM Fritz!Box"""
 
     def __init__(self, url, user, password):
@@ -51,7 +51,7 @@ class FritzProfileSwitch:
             if i == 1: # profiles only needed once
                 self.profiles = {o.get('value'): o.text_content() for o in select[0].xpath("option")}
 
-            self.devices[id] = {
+            self.devices[id] = { # this should be an actual object
                         "id": id,
                         "name": name,
                         "profile": profile,
