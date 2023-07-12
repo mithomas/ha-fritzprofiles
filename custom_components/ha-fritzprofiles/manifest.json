@@ -7,5 +7,5 @@
   "dependencies": [],
   "config_flow": true,
   "codeowners": ["@mithomas"],
-  "requirements": ["fritz-switch-profiles==1.1.5"]
+  "requirements": []
 }

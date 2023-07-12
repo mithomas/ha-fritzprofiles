@@ -9,10 +9,7 @@ ATTRIBUTION = "Data provided by http://jsonplaceholder.typicode.com/"
 ISSUE_URL = "https://github.com/mithomas/ha-fritzprofiles/issues"
 
 # Icons
-ICON = "mdi:format-quote-close"
-
-# Device classes
-BINARY_SENSOR_DEVICE_CLASS = "connectivity"
+ICON = "mdi:web"
 
 # Platforms
 PLATFORMS = ["select"]
@@ -22,9 +19,6 @@ PLATFORMS = ["select"]
 CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
 CONF_URL = "url"
-
-# Defaults
-DEFAULT_NAME = DOMAIN
 
 
 STARTUP_MESSAGE = f"""

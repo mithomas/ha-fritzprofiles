@@ -37,7 +37,7 @@ class FritzProfileSwitch:
             if (not cell) or (len(cell) != 5):
                 continue
 
-            name = cell[0].xpath("@title")
+            name = cell[0].get('title')
 
             select = cell[3].xpath("select")
             if not select:

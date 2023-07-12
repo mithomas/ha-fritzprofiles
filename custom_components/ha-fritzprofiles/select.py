@@ -1,36 +1,43 @@
-"""Switch platform for AVM FRITZ!Box Access Profiles."""
+"""HaFritzProfilesEntity class"""
+import logging
+
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.components.select import SelectEntity
 
-from .const import DEFAULT_NAME
+from .fritz_switch_profiles import FritzProfileSwitch
+
+from .const import ATTRIBUTION
 from .const import DOMAIN
+from .const import NAME
+from .const import VERSION
 from .const import ICON
-from .const import SWITCH
-from .entity import HaFritzProfilesEntity
 
+_LOGGER: logging.Logger = logging.getLogger(__package__)
 
-async def async_setup_entry(hass, entry, async_add_devices):
+async def async_setup_entry(hass, entry, async_add_entities):
     """Setup sensor platform."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_devices([HaFritzDevice(coordinator, entry)])
+    async_add_entities([HaFritzProfilesEntity(coordinator, device) for device in coordinator.client.devices.values()])
 
 
-class HaFritzDevice(HaFritzProfilesEntity, SelectEntity):
-    """https://github.com/mithomas/ha-fritzprofiles switch class."""
+class HaFritzProfilesEntity(CoordinatorEntity, SelectEntity):
+    def __init__(self, coordinator, device):
+        super().__init__(coordinator)
 
-    async def async_turn_on(self, **kwargs):  # pylint: disable=unused-argument
-        """Turn on the switch."""
-        await self.coordinator.api.async_set_title("bar")
-        await self.coordinator.async_request_refresh()
+        self.device = device
 
-    async def async_turn_off(self, **kwargs):  # pylint: disable=unused-argument
-        """Turn off the switch."""
-        await self.coordinator.api.async_set_title("foo")
-        await self.coordinator.async_request_refresh()
+        self._attr_current_option = self.coordinator.client.profiles[self.device['profile']]
+        self._attr_options = list(self.coordinator.client.profiles.values())
+
+    @property
+    def unique_id(self):
+        """Return a unique ID to use for this entity."""
+        return self.device['id']
 
     @property
     def name(self):
         """Return the name of the switch."""
-        return f"{DEFAULT_NAME}_{SWITCH}"
+        return self.device['name']
 
     @property
     def icon(self):
@@ -38,6 +45,15 @@ class HaFritzDevice(HaFritzProfilesEntity, SelectEntity):
         return ICON
 
     @property
-    def is_on(self):
-        """Return true if the switch is on."""
-        return self.coordinator.data.get("title", "") == "foo"
+    def device_state_attributes(self):
+        """Return the state attributes."""
+        return {
+            "attribution": ATTRIBUTION,
+            "id": str(self.coordinator.data.get("id")),
+            "integration": DOMAIN,
+        }
+
+    async def async_select_option(self, option: str) -> None:
+        """Change the selected option."""
+        fps = self.coordinator.client
+        fps.login()
