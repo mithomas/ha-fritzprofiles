@@ -13,6 +13,23 @@ import lxml.etree
 import lxml.html
 import requests
 
+from dataclasses import dataclass
+
+
+@dataclass
+class FritzProfileDevice:
+    """Data Type of FritzboxDataUpdateCoordinator's data."""
+    id: str
+    name: str
+    profile: str
+
+
+@dataclass
+class FritzProfileDeviceData:
+    """Data Type of FritzboxDataUpdateCoordinator's data."""
+    devices: dict[str, FritzProfileDevice]
+    profiles: dict[str, str]
+
 
 class FritzProfileSwitch: # rename to prepare later factoring out
     """A (Python) script to remotely set device profiles of an AVM Fritz!Box"""
@@ -25,16 +42,20 @@ class FritzProfileSwitch: # rename to prepare later factoring out
         self.devices = {}  # devices by id
         self.profiles = {} # profiles by id
 
-    def sync(self):
+
+    def sync(self) -> FritzProfileDeviceData:
         """Logs in and fetches all data."""
         self.login()
         self.fetch_device_profiles()
+        return FritzProfileDeviceData(devices=self.devices, profiles=self.profiles)
+
 
     def fetch_device_profiles(self):
         html = lxml.html.fromstring(self.load_device_profile_data())
         for i, row in enumerate(html.xpath('//table[@id="uiDevices"]/tr')):
             cell = row.xpath("td")
-            if (not cell) or (len(cell) != 5):
+
+            if not is_data_cell(cell):
                 continue
 
             name = cell[0].get('title')
@@ -48,14 +69,11 @@ class FritzProfileSwitch: # rename to prepare later factoring out
             id = select[0].xpath("@name")[0].split(":")[1]
             profile = select[0].xpath("option[@selected]/@value")[0]
 
-            if i == 1: # profiles only needed once
+            if i == 1: # profiles look the same for each device
                 self.profiles = {o.get('value'): o.text_content() for o in select[0].xpath("option")}
 
-            self.devices[id] = { # this should be an actual object
-                        "id": id,
-                        "name": name,
-                        "profile": profile,
-                    }
+            self.devices[id] = FritzProfileDevice(id=id, name=name, profile=profile)
+
 
     def load_device_profile_data(self):
         """Fetch and store device profiles."""
@@ -70,7 +88,7 @@ class FritzProfileSwitch: # rename to prepare later factoring out
         return requests.post(url, data=data, allow_redirects=True).text
 
 
-    def set_profiles(self, device_profiles):
+    def set_profile(self, device_id, profile_id):
         """Update profiles on the FritzBox."""
         logging.info("\nUPDATING DEVICE PROFILES...")
         data = {
@@ -78,31 +96,10 @@ class FritzProfileSwitch: # rename to prepare later factoring out
             "sid": self.sid,
             "apply": "",
             "oldpage": "/internet/kids_userlist.lua",
+            "profile:" + device_id: profile_id,
         }
-        updates = 0
-        for device_id, profile_id in device_profiles:
-            device = self._get_device(device_id)
-            if not device:
-                logging.error("  CANNOT IDENTIFY DEVICE %s", device_id)
-                continue
-            profile = self._get_profile(profile_id)
-            if not profile:
-                logging.error("  CANNOT IDENTIFY PROFILE %s", profile_id)
-                continue
-            logging.info(
-                "  CHANGING PROFILE OF %s/%s TO %s/%s",
-                device_id,
-                device["name"],
-                profile_id,
-                profile["name"],
-            )
-            if device["id2"]:
-                device_id = device["id2"]
-            updates += 1
-            data["profile:" + device_id] = profile_id
-        if updates > 0:
-            url = self.url + "/data.lua"
-            requests.post(url, data=data, allow_redirects=True)
+        requests.post(self.url + "/data.lua", data=data, allow_redirects=True)
+
 
     def login(self):
         """Login and return session id."""
@@ -122,6 +119,7 @@ class FritzProfileSwitch: # rename to prepare later factoring out
             )
         self.sid = sid
 
+
 def get_sid_challenge(url):
     """Parse out sid and challenge from response of the login url."""
     response = requests.get(url, allow_redirects=True)
@@ -129,3 +127,8 @@ def get_sid_challenge(url):
     sid = data.xpath("//SessionInfo/SID/text()")[0]
     challenge = data.xpath("//SessionInfo/Challenge/text()")[0]
     return sid, challenge
+
+
+def is_data_cell(cell) -> bool:
+    """Checks whether the given cell is a device-profile data cell. """
+    return cell and len(cell) == 5

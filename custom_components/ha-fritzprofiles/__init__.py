@@ -6,16 +6,13 @@ https://github.com/mithomas/ha-fritzprofiles
 """
 import asyncio
 import logging
-from datetime import timedelta
-
-from .fritz_switch_profiles import FritzProfileSwitch
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import Config
-from homeassistant.core import HomeAssistant
+from homeassistant.core import Config, HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from homeassistant.helpers.update_coordinator import UpdateFailed
+
+from .coordinator import HaFritzProfilesDataUpdateCoordinator
+from .fritz_profile_switch import FritzProfileSwitch
 
 from .const import CONF_PASSWORD
 from .const import CONF_USERNAME
@@ -24,12 +21,10 @@ from .const import DOMAIN
 from .const import PLATFORMS
 from .const import STARTUP_MESSAGE
 
-SCAN_INTERVAL = timedelta(hours=1)
-
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
 
-async def async_setup(hass: HomeAssistant, config: Config):
+async def async_setup(hass: HomeAssistant, config: Config) -> bool:
     """Set up this integration using YAML is not supported."""
     return True
 
@@ -44,9 +39,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     password = entry.data.get(CONF_PASSWORD)
     url = entry.data.get(CONF_URL)
 
-    client = FritzProfileSwitch(url, username, password)
-
-    coordinator = HaFritzProfilesDataUpdateCoordinator(hass, client=client)
+    coordinator = HaFritzProfilesDataUpdateCoordinator(hass, client=FritzProfileSwitch(url, username, password))
     await coordinator.async_refresh()
 
     if not coordinator.last_update_success:
@@ -63,31 +56,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     entry.add_update_listener(async_reload_entry)
     return True
-
-
-class HaFritzProfilesDataUpdateCoordinator(DataUpdateCoordinator):
-    """Class to manage fetching data from the API."""
-
-    def __init__(
-        self,
-        hass: HomeAssistant,
-        client: FritzProfileSwitch,
-    ) -> None:
-        """Initialize."""
-        self.client = client
-        self.platforms = []
-
-        super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=SCAN_INTERVAL)
-
-    async def _async_update_data(self):
-        """Update data via library."""
-        try:
-            _LOGGER.info("Load data")
-            await self.hass.async_add_executor_job(self.client.sync)
-            return True # TODO: this should hold the relevant 
-        except Exception as exception:
-            _LOGGER.info("Loading failed")
-            raise UpdateFailed() from exception
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

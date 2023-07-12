@@ -1,9 +1,9 @@
 """Adds config flow for AVM FRITZ!Box Access Profiles."""
 import voluptuous as vol
 
-from .fritz_switch_profiles import FritzProfileSwitch
-
 from homeassistant import config_entries
+
+from .fritz_profile_switch import FritzProfileSwitch
 
 from .const import CONF_PASSWORD
 from .const import CONF_USERNAME
