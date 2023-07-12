@@ -94,3 +94,11 @@ Code template was mainly taken from [@Ludeeus](https://github.com/ludeeus)'s [in
 [releases-shield]: https://img.shields.io/github/release/mithomas/ha-fritzprofiles.svg?style=for-the-badge
 [releases]: https://github.com/mithomas/ha-fritzprofiles/releases
 [user_profile]: https://github.com/mithomas
+
+
+
+
+
+https://github.com/flopp/fritz-switch-profiles
+https://github.com/eifinger/fritz-switch-profiles
+https://github.com/AaronDavidSchneider/fritzprofiles
