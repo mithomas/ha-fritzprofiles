@@ -35,7 +35,7 @@ class HaFritzProfilesDataUpdateCoordinator(DataUpdateCoordinator):
         """Update data via library."""
         try:
             _LOGGER.info("Load data")
-            return await self.hass.async_add_executor_job(self.client.sync)
+            return await self.hass.async_add_executor_job(self.client.load_device_profiles)
         except Exception as exception:
             _LOGGER.info("Loading failed")
             raise UpdateFailed() from exception
