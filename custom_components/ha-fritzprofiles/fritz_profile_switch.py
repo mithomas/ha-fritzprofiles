@@ -100,7 +100,10 @@ class FritzProfileSwitch:
             "oldpage": "/internet/kids_userlist.lua",
         }
         url = self.url + "/data.lua"
-        return requests.post(url, data=data, allow_redirects=True, timeout=300).text #TODO: check response
+
+        response = requests.post(url, data=data, allow_redirects=True, timeout=300)
+        response.raise_for_status()
+        return response.text
 
 
     def set_device_profile(self, device_id, profile_id): # pylint: disable=missing-function-docstring
@@ -119,7 +122,8 @@ class FritzProfileSwitch:
             "oldpage": "/internet/kids_userlist.lua",
             "profile:" + device_id: profile_id,
         }
-        requests.post(self.url + "/data.lua", data=data, allow_redirects=True, timeout=300) #TODO: check response
+        response = requests.post(self.url + "/data.lua", data=data, allow_redirects=True, timeout=300)
+        response.raise_for_status()
 
 
     def check_credentials(self) -> bool: # pylint: disable=missing-function-docstring
@@ -153,13 +157,14 @@ class FritzProfileSwitch:
 
     def _logout(self):
         """Update profiles on the FritzBox."""
-        logging.info("\LOGGING OUT DEVICE PROFILES...")
+        logging.info("LOGGING OUT DEVICE PROFILES...")
         data = {
             "xhr": 1,
             "sid": self.sid,
             "security:command/logout=": 42,
         }
-        requests.post(self.url, data=data, allow_redirects=True, timeout=30) #TODO: check response
+        response = requests.post(self.url, data=data, allow_redirects=True, timeout=30)
+        response.raise_for_status()
         self.sid = INVALID_SID
 
 
