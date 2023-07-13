@@ -33,16 +33,12 @@ class HaFritzProfilesFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 user_input[CONF_PASSWORD],
             )
             if valid:
-                return self.async_create_entry(
-                    title=user_input[CONF_USERNAME], data=user_input
-                )
-            else:
-                self._errors["base"] = "auth"
+                return self.async_create_entry(title=f"FRITZ!Box ({user_input[CONF_USERNAME]} @ {user_input[CONF_URL]})", data=user_input)
+            self._errors["base"] = "auth"
 
             return await self._show_config_form(user_input)
 
         return await self._show_config_form(user_input)
-
 
 
     async def _show_config_form(self, user_input):  # pylint: disable=unused-argument
