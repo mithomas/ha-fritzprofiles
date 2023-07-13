@@ -1,8 +1,7 @@
 """
-Custom integration to integrate AVM FRITZ!Box Access Profiles with Home Assistant.
+Custom integration for AVM FRITZ!Box device access profiles in Home Assistant.
 
-For more details about this integration, please refer to
-https://github.com/mithomas/ha-fritzprofiles
+For more details about this integration, please see https://github.com/mithomas/ha-fritzprofiles
 """
 import asyncio
 import logging
@@ -14,12 +13,7 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from .coordinator import HaFritzProfilesDataUpdateCoordinator
 from .fritz_profile_switch import FritzProfileSwitch
 
-from .const import CONF_PASSWORD
-from .const import CONF_USERNAME
-from .const import CONF_URL
-from .const import DOMAIN
-from .const import PLATFORMS
-from .const import STARTUP_MESSAGE
+from .const import CONF_PASSWORD, CONF_USERNAME, CONF_URL, DOMAIN, PLATFORMS, VERSION
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
@@ -33,7 +27,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up this integration using UI."""
     if hass.data.get(DOMAIN) is None:
         hass.data.setdefault(DOMAIN, {})
-        _LOGGER.info(STARTUP_MESSAGE)
+        _LOGGER.info("Starting up custom integration ha-fritzprofiles %s", VERSION)
 
     username = entry.data.get(CONF_USERNAME)
     password = entry.data.get(CONF_PASSWORD)

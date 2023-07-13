@@ -1,7 +1,5 @@
 """\
-Client library to read and update AVM FRITZ!Box device access profiles by parsing kids_userlist.lua.
-
-Loads the whole list in one and saves
+Client library to read and update AVM FRITZ!Box device access profiles by parsing kids_userlist.lua. Loads the whole list in one.
 
 Originally based on https://github.com/eifinger/fritz-switch-profiles by Florian Pigorsch, Kevin Eifinger & contributors.
 """
@@ -14,6 +12,8 @@ import lxml.html
 import requests
 
 from dataclasses import dataclass
+
+_LOGGER: logging.Logger = logging.getLogger(__package__)
 
 INVALID_SID = "0000000000000000"
 
@@ -86,13 +86,16 @@ class FritzProfileSwitch:
 
             if i == 1: # profiles look the same for each device
                 self.profiles_by_id = {o.get('value'): o.text_content() for o in select[0].xpath("option")}
+                _LOGGER.info("Loaded %d profiles", len(self.profiles_by_id))
 
             self.devices.append(FritzProfileDevice(id=device_id, name=name, profile_id=profile))
+
+        _LOGGER.info("Loaded %d devices", len(self.devices))
 
 
     def _load_device_profile_rawdata(self):
         """Fetch and store device profiles."""
-        logging.info("FETCHING DEVICE PROFILES...")
+        _LOGGER.info("Loading device data")
         data = {
             "xhr": 1,
             "sid": self.sid,
@@ -114,7 +117,7 @@ class FritzProfileSwitch:
 
     def _set_device_profile(self, device_id, profile_id):
         """Update profiles on the FritzBox."""
-        logging.info("\nUPDATING DEVICE PROFILES...")
+        _LOGGER.info("Setting device %s to profile %s", device_id, profile_id)
         data = {
             "xhr": 1,
             "sid": self.sid,
@@ -138,7 +141,6 @@ class FritzProfileSwitch:
 
     def _login(self):
         """Login and return session id."""
-        logging.info("LOGGING IN TO FRITZ!BOX AT %s...", self.url)
         sid, challenge = _get_sid_challenge(self.url + "/login_sid.lua")
         if sid == INVALID_SID:
             md5 = hashlib.md5()
@@ -149,15 +151,14 @@ class FritzProfileSwitch:
             url = self.url + "/login_sid.lua?username=" + self.user + "&response=" + response
             sid, challenge = _get_sid_challenge(url)
         if sid == INVALID_SID:
-            raise PermissionError(
-                "Cannot login to {} using the supplied credentials.".format(self.url)
-            )
+            raise PermissionError("Cannot login to {} using the supplied credentials.".format(self.url))
+
+        _LOGGER.info("Logged into %s as %s", self.url, self.user)
         self.sid = sid
 
 
     def _logout(self):
         """Update profiles on the FritzBox."""
-        logging.info("LOGGING OUT DEVICE PROFILES...")
         data = {
             "xhr": 1,
             "sid": self.sid,
@@ -165,6 +166,7 @@ class FritzProfileSwitch:
         }
         response = requests.post(self.url, data=data, allow_redirects=True, timeout=30)
         response.raise_for_status()
+        _LOGGER.info("Logged out")
         self.sid = INVALID_SID
 
 

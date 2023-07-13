@@ -1,14 +1,11 @@
-"""Adds config flow for AVM FRITZ!Box Access Profiles."""
+"""Adds config flow for AVM FRITZ!Box device access profiles."""
 import voluptuous as vol
 
 from homeassistant import config_entries
 
 from .fritz_profile_switch import FritzProfileSwitch
 
-from .const import CONF_PASSWORD
-from .const import CONF_USERNAME
-from .const import CONF_URL
-from .const import DOMAIN
+from .const import CONF_PASSWORD, CONF_USERNAME, CONF_URL, DOMAIN
 
 
 class HaFritzProfilesFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
@@ -23,6 +20,7 @@ class HaFritzProfilesFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input=None):
         """Handle a flow initialized by the user."""
+
         self._errors = {}
 
         if self._async_current_entries():
@@ -48,7 +46,8 @@ class HaFritzProfilesFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
 
     async def _show_config_form(self, user_input):  # pylint: disable=unused-argument
-        """Show the configuration form to edit location data."""
+        """Shows the configuration form to edit location data."""
+
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
@@ -61,8 +60,8 @@ class HaFritzProfilesFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             errors=self._errors,
         )
 
-    async def _test_credentials(self, url, username, password):
-        """Return true if credentials is valid."""
+    async def _test_credentials(self, url, username, password) -> bool:
+        """Returns true if credentials is valid."""
         try:
             return await self.hass.async_add_executor_job(FritzProfileSwitch(url, username, password).check_credentials)
         except Exception:  # pylint: disable=broad-except
