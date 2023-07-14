@@ -23,7 +23,7 @@ class FritzProfileDevice:
     """Data class for a single device."""
 
     id: str
-    """Example: landevice4711"""
+    """Examples: landevice4711 or user4711"""
 
     name: str
     """Device name as listed in the FRITZ!Box web ui."""
@@ -37,12 +37,10 @@ class FritzProfileDeviceData:
 
     devices: list[FritzProfileDevice]
     profiles_by_id: dict[str, str]
-    profiles_by_name: dict[str, str]
 
     def __init__(self, devices, profiles):
         self.devices = devices
         self.profiles_by_id = profiles
-        self.profiles_by_name = {name:id for id,name in profiles.items()}
 
 
 class FritzProfileSwitch:
@@ -53,19 +51,19 @@ class FritzProfileSwitch:
         self.user = user
         self.sid = INVALID_SID
         self.password = password
-        self.devices = []
-        self.profiles_by_id = {}
 
 
     def load_device_profiles(self) -> FritzProfileDeviceData:
         """Performs login, loads all device profile data and performs logout."""
         self._login()
-        self._load_device_profiles()
+        devices, profiles = self._load_device_profiles()
         self._logout()
-        return FritzProfileDeviceData(devices=self.devices, profiles=self.profiles_by_id)
+        return FritzProfileDeviceData(devices, profiles)
 
 
     def _load_device_profiles(self):
+        devices = []
+
         html = lxml.html.fromstring(self._load_device_profile_rawdata())
         for i, row in enumerate(html.xpath('//table[@id="uiDevices"]/tr')):
             cell = row.xpath("td")
@@ -85,12 +83,13 @@ class FritzProfileSwitch:
             profile = select[0].xpath("option[@selected]/@value")[0]
 
             if i == 1: # profiles look the same for each device
-                self.profiles_by_id = {o.get('value'): o.text_content() for o in select[0].xpath("option")}
-                _LOGGER.info("Loaded %d profiles", len(self.profiles_by_id))
+                profiles_by_id = {o.get('value'): o.text_content() for o in select[0].xpath("option")}
+                _LOGGER.info("Loaded %d profiles", len(profiles_by_id))
 
-            self.devices.append(FritzProfileDevice(id=device_id, name=name, profile_id=profile))
+            devices.append(FritzProfileDevice(id=device_id, name=name, profile_id=profile))
 
-        _LOGGER.info("Loaded %d devices", len(self.devices))
+        _LOGGER.info("Loaded %d devices", len(devices))
+        return devices, profiles_by_id
 
 
     def _load_device_profile_rawdata(self):
