@@ -2,20 +2,12 @@
 from unittest.mock import call
 from unittest.mock import patch
 
-from custom_components.https://github.com/mithomas/ha-fritzprofiles import (
+from custom_components.ha_fritzprofiles import (
     async_setup_entry,
 )
-from custom_components.https://github.com/mithomas/ha-fritzprofiles.const import (
-    DEFAULT_NAME,
-)
-from custom_components.https://github.com/mithomas/ha-fritzprofiles.const import (
+from custom_components.ha_fritzprofiles.const import (
     DOMAIN,
 )
-from custom_components.https://github.com/mithomas/ha-fritzprofiles.const import (
-    SWITCH,
-)
-from homeassistant.components.switch import SERVICE_TURN_OFF
-from homeassistant.components.switch import SERVICE_TURN_ON
 from homeassistant.const import ATTR_ENTITY_ID
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -35,9 +27,9 @@ async def test_switch_services(hass):
         "custom_components.https://github.com/mithomas/ha-fritzprofiles.HaProfilesApiClient.async_set_title"
     ) as title_func:
         await hass.services.async_call(
-            SWITCH,
-            SERVICE_TURN_OFF,
-            service_data={ATTR_ENTITY_ID: f"{SWITCH}.{DEFAULT_NAME}_{SWITCH}"},
+            "SWITCH",
+            "SERVICE_TURN_OFF",
+            service_data={ATTR_ENTITY_ID: "SWITCH.DEFAULT_NAME_SWITCH"},
             blocking=True,
         )
         assert title_func.called
@@ -46,9 +38,9 @@ async def test_switch_services(hass):
         title_func.reset_mock()
 
         await hass.services.async_call(
-            SWITCH,
-            SERVICE_TURN_ON,
-            service_data={ATTR_ENTITY_ID: f"{SWITCH}.{DEFAULT_NAME}_{SWITCH}"},
+            "SWITCH",
+            "SERVICE_TURN_ON",
+            service_data={ATTR_ENTITY_ID: "SWITCH.DEFAULT_NAME_SWITCH"},
             blocking=True,
         )
         assert title_func.called

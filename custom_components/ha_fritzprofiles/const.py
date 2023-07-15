@@ -1,7 +1,7 @@
 """Constants for AVM FRITZ!Box Device Access Profiles."""
 # Base component constants
 NAME = "AVM FRITZ!Box Device Access Profiles"
-DOMAIN = "ha-fritzprofiles"
+DOMAIN = "ha_fritzprofiles"
 VERSION = "0.0.1"
 
 ATTRIBUTION = "Data provided by http://jsonplaceholder.typicode.com/"

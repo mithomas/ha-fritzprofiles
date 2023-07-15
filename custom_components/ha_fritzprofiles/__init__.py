@@ -7,13 +7,18 @@ import asyncio
 import logging
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import Config, HomeAssistant
+from homeassistant.core import Config
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 
+from .const import CONF_PASSWORD
+from .const import CONF_URL
+from .const import CONF_USERNAME
+from .const import DOMAIN
+from .const import PLATFORMS
+from .const import VERSION
 from .coordinator import HaFritzProfilesDataUpdateCoordinator
 from .fritz_profile_switch import FritzProfileSwitch
-
-from .const import CONF_PASSWORD, CONF_USERNAME, CONF_URL, DOMAIN, PLATFORMS, VERSION
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
@@ -33,7 +38,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     password = entry.data.get(CONF_PASSWORD)
     url = entry.data.get(CONF_URL)
 
-    coordinator = HaFritzProfilesDataUpdateCoordinator(hass, client=FritzProfileSwitch(url, username, password))
+    coordinator = HaFritzProfilesDataUpdateCoordinator(
+        hass, client=FritzProfileSwitch(url, username, password)
+    )
     await coordinator.async_refresh()
 
     if not coordinator.last_update_success:

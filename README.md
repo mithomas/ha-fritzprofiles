@@ -19,11 +19,11 @@ please look at the [User Guide in the Cookiecutter documentation](https://cookie
 
 **This component will set up the following platforms.**
 
-| Platform        | Description                                                               |
-| --------------- | ------------------------------------------------------------------------- |
-| `binary_sensor` | Show something `True` or `False`.                                         |
+| Platform        | Description                                       |
+| --------------- | ------------------------------------------------- |
+| `binary_sensor` | Show something `True` or `False`.                 |
 | `sensor`        | Show info from AVM FRITZ!Box Access Profiles API. |
-| `switch`        | Switch something `True` or `False`.                                       |
+| `switch`        | Switch something `True` or `False`.               |
 
 ![example][exampleimg]
 
@@ -95,10 +95,28 @@ Code template was mainly taken from [@Ludeeus](https://github.com/ludeeus)'s [in
 [releases]: https://github.com/mithomas/ha-fritzprofiles/releases
 [user_profile]: https://github.com/mithomas
 
-
-
-
-
 https://github.com/flopp/fritz-switch-profiles
 https://github.com/eifinger/fritz-switch-profiles
 https://github.com/AaronDavidSchneider/fritzprofiles
+
+https://boxmatrix.info/wiki/Property:kids_userlist.lua
+
+upudate will take uup to on minuute seconds
+
+TODO: Translations
+TODO: cookiiecutter cleanup
+TOdO: Readme
+TODO: linting / hassfest
+TODO: HACS
+
+readme: mein device taucht nicht auf! names need to be unique - change in FB (same devic/multiple NICs)
+howto : manuual
+howto. hacs
+
+service für manuelles setzzen ei unbekannter entität
+serviicee: dump liists
+
+options: map via name > longer loadtime, duupkiicate are there as entities, but don't show a state
+use landdev_id: new entiitieson every change
+use name: duplicates not availiable; rwoorkarounds availbale
+configure intrval
