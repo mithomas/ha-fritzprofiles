@@ -120,3 +120,5 @@ options: map via name > longer loadtime, duupkiicate are there as entities, but 
 use landdev_id: new entiitieson every change
 use name: duplicates not availiable; rwoorkarounds availbale
 configure intrval
+
+dependabot
