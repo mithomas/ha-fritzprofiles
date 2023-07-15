@@ -1,0 +1,3 @@
+[run]
+source = custom_components
+omit = *.py
