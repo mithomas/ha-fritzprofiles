@@ -66,6 +66,8 @@ class HaFritzProfilesEntity(CoordinatorEntity, SelectEntity):
 
         Performs a refresh first as device id might have changed after a new profile has been set outside of HA.
         (Device ids are generally 'landeviceNNNN' when using the standard profile and 'userNNNN' when using a custom one.)
+
+        Not doing so would mean that further profile changes are not possible, if there has been a user profile selected before.
         """
         _LOGGER.info("Selected profile '%s' for device %s", profile, self.unique_id)
         await self.coordinator.async_request_refresh()
