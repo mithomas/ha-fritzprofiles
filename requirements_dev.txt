@@ -1,2 +1,4 @@
 homeassistant
 lxml
+pre_commit
+reorder-python-imports
