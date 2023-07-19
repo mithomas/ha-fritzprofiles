@@ -25,23 +25,23 @@ class HaFritzProfilesCoordinatorData:
     profiles_by_id: dict[str, str]
     profiles_by_name: dict[str, str]
 
-    def __init__(self, fritzProfileDeviceData):
+    def __init__(self, fritz_profile_device_data):
         # remove duplicates per name since this is going to be our unique_id
         counts = Counter(
-            getattr(device, "name") for device in fritzProfileDeviceData.devices
+            getattr(device, "name") for device in fritz_profile_device_data.devices
         )
         unique_devices_per_name = [
             device
-            for device in fritzProfileDeviceData.devices
+            for device in fritz_profile_device_data.devices
             if counts[getattr(device, "name")] == 1
         ]
         self.devices_by_name = {
             device.name: device for device in unique_devices_per_name
         }
 
-        self.profiles_by_id = fritzProfileDeviceData.profiles_by_id
+        self.profiles_by_id = fritz_profile_device_data.profiles_by_id
         self.profiles_by_name = {
-            name: id for id, name in fritzProfileDeviceData.profiles_by_id.items()
+            name: id for id, name in fritz_profile_device_data.profiles_by_id.items()
         }
 
 
