@@ -1,29 +1,18 @@
 categories:
-  - title: ":boom: Breaking Changes"
-    label: "breaking"
   - title: ":rocket: Features"
-    label: "enhancement"
-  - title: ":fire: Removals and Deprecations"
-    label: "removal"
+    labels:
+      - enhancement
+      - feature
+      - feat
   - title: ":beetle: Fixes"
-    label: "bug"
-  - title: ":racehorse: Performance"
-    label: "performance"
-  - title: ":rotating_light: Testing"
-    label: "testing"
-  - title: ":construction_worker: Continuous Integration"
-    label: "ci"
-  - title: ":books: Documentation"
-    label: "documentation"
-  - title: ":hammer: Refactoring"
-    label: "refactoring"
-  - title: ":lipstick: Style"
-    label: "style"
+    labels:
+      - fix
+      - bugfix
+      - bug
   - title: ":package: Dependencies"
     labels:
-      - "dependencies"
-      - "build"
+      - dependencies
 template: |
-  ## Changes
+  ## What’s Changed
 
   $CHANGES
