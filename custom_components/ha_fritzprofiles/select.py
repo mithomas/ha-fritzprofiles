@@ -56,12 +56,13 @@ class HaFritzProfilesEntity(CoordinatorEntity, SelectEntity):
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        self._update_values(self.coordinator.data.devices_by_name[self.unique_id])
-        self.async_write_ha_state()
+        if self.unique_id in self.coordinator.data.devices_by_name:
+            self._update_values(self.coordinator.data.devices_by_name[self.unique_id])
+            self.async_write_ha_state()
 
-    async def async_select_option(
+    async def async_select_option(  # pylint: disable=arguments-renamed
         self, profile: str
-    ) -> None:  # pylint: disable=missing-function-docstring
+    ) -> None:
         """Handles a new selection.
 
         Performs a refresh first as device id might have changed after a new profile has been set outside of HA.
