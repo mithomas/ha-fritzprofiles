@@ -4,7 +4,7 @@ Contributing to this project should be as easy and transparent as possible, whet
 
 - Reporting a bug
 - Discussing the current state of the code
-- Submitting a fix
+- Submitting a fix or implementing a feature
 - Proposing new features
 
 ## Github is used for everything
