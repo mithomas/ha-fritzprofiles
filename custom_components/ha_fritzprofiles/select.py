@@ -58,7 +58,7 @@ class HaFritzProfilesEntity(CoordinatorEntity, SelectEntity):
         """Handle updated data from the coordinator."""
         if self.unique_id in self.coordinator.data.devices_by_name:
             self._update_values(self.coordinator.data.devices_by_name[self.unique_id])
-            self.async_write_ha_state()
+            self.schedule_update_ha_state()
 
     async def async_select_option(  # pylint: disable=arguments-renamed
         self, profile: str
