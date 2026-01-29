@@ -1,109 +1,119 @@
 """Test AVM FRITZ!Box Access Profiles config flow."""
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
-from homeassistant import config_entries, data_entry_flow
+from homeassistant import config_entries
+from homeassistant.data_entry_flow import FlowResultType
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+import requests
 
-from custom_components.ha_fritzprofiles.const import DOMAIN, PLATFORMS
+from custom_components.ha_fritzprofiles.const import DOMAIN
 
 
-# This fixture bypasses the actual setup of the integration since we only want
-# to test the config flow. We test the actual functionality of the integration
-# in other test modules.
 @pytest.fixture(autouse=True)
 def bypass_setup_fixture():
-    """Prevent setup."""
+    """Prevent integration setup during config flow tests."""
     with (
         patch(
             "custom_components.ha_fritzprofiles.async_setup",
-            return_value=True,
+            new=AsyncMock(return_value=True),
         ),
         patch(
             "custom_components.ha_fritzprofiles.async_setup_entry",
-            return_value=True,
+            new=AsyncMock(return_value=True),
+        ),
+        patch(
+            "custom_components.ha_fritzprofiles.async_unload_entry",
+            new=AsyncMock(return_value=True),
         ),
     ):
         yield
 
 
-# Here we simulate a successful config flow from the backend. Note that we use
-# the `bypass_get_data` fixture here because we want the config flow validation
-# to succeed during the test.
-@pytest.mark.skip
-async def test_successful_config_flow(hass, bypass_get_data, mock_config):
-    """Test a successful config flow."""
-    # Initialize a config flow
+@pytest.mark.asyncio
+async def test_config_flow_shows_form(hass):
+    """Test the initial form is shown."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
 
-    # Check that the config flow shows the user form as the first step
-    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
+    assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == "user"
 
-    # If a user were to enter `test_username` for username and `test_password`
-    # for password, it would result in this function call.
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], user_input=mock_config
-    )
 
-    # Check that the config flow is complete and a new entry is created with
-    # the input data
-    assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
-    assert result["title"] == "test_username"
+@pytest.mark.asyncio
+async def test_config_flow_success(hass, mock_config):
+    """Test a successful config flow."""
+    with patch(
+        "custom_components.ha_fritzprofiles.config_flow.FritzProfileSwitch.check_credentials",
+        return_value=True,
+        autospec=True,
+    ) as check_credentials:
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": config_entries.SOURCE_USER}
+        )
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], user_input=mock_config
+        )
+
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    assert result["title"] == "FRITZ!Box (test_username @ http://fritz.box)"
     assert result["data"] == mock_config
     assert result["result"]
+    check_credentials.assert_called_once()
 
 
-# In this case, we want to simulate a failure during the config flow. We use
-# the `error_on_get_data` mock instead of `bypass_get_data` (note the function
-# parameters) to raise an Exception during validation of the input config.
-@pytest.mark.skip
-async def test_failed_config_flow(hass, error_on_get_data, mock_config):
+@pytest.mark.asyncio
+async def test_config_flow_auth_error(hass, mock_config):
     """Test a failed config flow due to credential validation failure."""
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": config_entries.SOURCE_USER}
-    )
+    with patch(
+        "custom_components.ha_fritzprofiles.config_flow.FritzProfileSwitch.check_credentials",
+        side_effect=PermissionError,
+        autospec=True,
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": config_entries.SOURCE_USER}
+        )
 
-    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
-    assert result["step_id"] == "user"
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], user_input=mock_config
+        )
 
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], user_input=mock_config
-    )
-
-    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
+    assert result["type"] == FlowResultType.FORM
     assert result["errors"] == {"base": "auth"}
 
 
-# Our config flow also has an options flow, so we must test it as well.
-@pytest.mark.skip
-async def test_options_flow(hass, mock_config):
-    """Test an options flow."""
-    # Create a new MockConfigEntry and add to HASS (we're bypassing config flow
-    # entirely).
+@pytest.mark.asyncio
+async def test_config_flow_request_exception(hass, mock_config):
+    """Test a failed config flow due to request exceptions."""
+    with patch(
+        "custom_components.ha_fritzprofiles.config_flow.FritzProfileSwitch.check_credentials",
+        side_effect=requests.RequestException,
+        autospec=True,
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": config_entries.SOURCE_USER}
+        )
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], user_input=mock_config
+        )
+
+    assert result["type"] == FlowResultType.FORM
+    assert result["errors"] == {"base": "auth"}
+
+
+@pytest.mark.asyncio
+async def test_config_flow_single_instance_abort(hass, mock_config):
+    """Test only one instance can be configured."""
     entry = MockConfigEntry(domain=DOMAIN, data=mock_config, entry_id="test")
     entry.add_to_hass(hass)
 
-    # Initialize an options flow
-    await hass.config_entries.async_setup(entry.entry_id)
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-
-    # Verify that the first options step is a user form
-    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
-    assert result["step_id"] == "user"
-
-    # Enter some fake data into the form
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"],
-        user_input={platform: platform != "sensor" for platform in PLATFORMS},
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
 
-    # Verify that the flow finishes
-    assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
-    assert result["title"] == "test_username"
-
-    # Verify that the options were updated
-    assert entry.options == {"BINARY_SENSOR": True, "SENSOR": False, "SWITCH": True}
+    assert result["type"] == FlowResultType.ABORT
+    assert result["reason"] == "single_instance_allowed"

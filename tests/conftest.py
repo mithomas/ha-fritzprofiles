@@ -4,7 +4,18 @@ from unittest.mock import patch
 
 import pytest
 
-from custom_components.ha_fritzprofiles.const import CONF_PASSWORD, CONF_USERNAME
+from custom_components.ha_fritzprofiles.const import (
+    CONF_PASSWORD,
+    CONF_URL,
+    CONF_USERNAME,
+)
+from custom_components.ha_fritzprofiles.coordinator import (
+    HaFritzProfilesCoordinatorData,
+)
+from custom_components.ha_fritzprofiles.fritz_profile_switch import (
+    FritzProfileDevice,
+    FritzProfileDeviceData,
+)
 
 pytest_plugins = "pytest_homeassistant_custom_component"
 
@@ -20,6 +31,12 @@ def skip_notifications_fixture():
         patch("homeassistant.components.persistent_notification.async_dismiss"),
     ):
         yield
+
+
+@pytest.fixture(autouse=True)
+def enable_custom_integrations_fixture(enable_custom_integrations):
+    """Enable custom integrations for tests."""
+    yield
 
 
 # This fixture, when used, will result in calls to load_device_profiles to return
@@ -49,4 +66,25 @@ def error_get_data_fixture():
 @pytest.fixture(name="mock_config")
 def mock_config_fixture():
     """Return a mock config dict."""
-    return {CONF_USERNAME: "test_username", CONF_PASSWORD: "test_password"}
+    return {
+        CONF_USERNAME: "test_username",
+        CONF_PASSWORD: "test_password",
+        CONF_URL: "http://fritz.box",
+    }
+
+
+@pytest.fixture(name="fritz_device_data")
+def fritz_device_data_fixture():
+    """Provide raw Fritz profile device data."""
+    devices = [
+        FritzProfileDevice(id="landevice1", name="iPhone", profile_id="profile1"),
+        FritzProfileDevice(id="landevice2", name="Laptop", profile_id="profile2"),
+    ]
+    profiles = {"profile1": "Standard", "profile2": "Limited"}
+    return FritzProfileDeviceData(devices, profiles)
+
+
+@pytest.fixture(name="coordinator_data")
+def coordinator_data_fixture(fritz_device_data):
+    """Provide coordinator data built from Fritz device data."""
+    return HaFritzProfilesCoordinatorData(fritz_device_data)
