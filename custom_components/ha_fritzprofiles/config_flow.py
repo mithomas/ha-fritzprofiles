@@ -3,10 +3,7 @@
 import voluptuous as vol
 from homeassistant import config_entries
 
-from .const import CONF_PASSWORD
-from .const import CONF_URL
-from .const import CONF_USERNAME
-from .const import DOMAIN
+from .const import CONF_PASSWORD, CONF_URL, CONF_USERNAME, DOMAIN
 from .fritz_profile_switch import FritzProfileSwitch
 
 CONFIG_SCHEMA = vol.Schema(

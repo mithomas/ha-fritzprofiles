@@ -12,12 +12,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.core_config import Config
 from homeassistant.exceptions import ConfigEntryNotReady
 
-from .const import CONF_PASSWORD
-from .const import CONF_URL
-from .const import CONF_USERNAME
-from .const import DOMAIN
-from .const import PLATFORMS
-from .const import VERSION
+from .const import CONF_PASSWORD, CONF_URL, CONF_USERNAME, DOMAIN, PLATFORMS, VERSION
 from .coordinator import HaFritzProfilesDataUpdateCoordinator
 from .fritz_profile_switch import FritzProfileSwitch
 

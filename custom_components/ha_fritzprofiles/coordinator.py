@@ -5,13 +5,14 @@ from collections import Counter
 from datetime import timedelta
 
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from homeassistant.helpers.update_coordinator import UpdateFailed
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DOMAIN
-from .fritz_profile_switch import FritzProfileDevice
-from .fritz_profile_switch import FritzProfileDeviceData
-from .fritz_profile_switch import FritzProfileSwitch
+from .fritz_profile_switch import (
+    FritzProfileDevice,
+    FritzProfileDeviceData,
+    FritzProfileSwitch,
+)
 
 SCAN_INTERVAL = timedelta(minutes=60)
 

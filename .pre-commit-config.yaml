@@ -14,6 +14,11 @@ repos:
         language: system
         types: [python]
         require_serial: true
+      - id: ruff-imports
+        name: Ruff import sorting
+        entry: ruff check --select I --fix
+        language: system
+        types: [python]
       - id: flake8
         name: flake8
         entry: flake8

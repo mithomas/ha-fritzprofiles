@@ -3,11 +3,10 @@
 from unittest.mock import patch
 
 import pytest
-from custom_components.ha_fritzprofiles.const import DOMAIN
-from custom_components.ha_fritzprofiles.const import PLATFORMS
-from homeassistant import config_entries
-from homeassistant import data_entry_flow
+from homeassistant import config_entries, data_entry_flow
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from custom_components.ha_fritzprofiles.const import DOMAIN, PLATFORMS
 
 from .const import MOCK_CONFIG
 

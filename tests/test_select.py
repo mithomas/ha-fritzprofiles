@@ -4,17 +4,16 @@
 # pylint: disable=missing-function-docstring
 # pylint: disable=protected-access
 # pylint: disable=wrong-import-order
-from unittest.mock import call
-from unittest.mock import MagicMock
-from unittest.mock import patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
+from homeassistant.const import ATTR_ENTITY_ID
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
 from custom_components.ha_fritzprofiles import async_setup_entry
 from custom_components.ha_fritzprofiles.const import DOMAIN
 from custom_components.ha_fritzprofiles.fritz_profile_switch import FritzProfileDevice
 from custom_components.ha_fritzprofiles.select import HaFritzProfilesEntity
-from homeassistant.const import ATTR_ENTITY_ID
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from .const import MOCK_CONFIG
 
