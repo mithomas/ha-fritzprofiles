@@ -65,9 +65,9 @@ async def test_setup_entry_not_ready(hass, mock_config):
             "async_refresh",
             _failed_refresh,
         ),
+        pytest.raises(ConfigEntryNotReady),
     ):
-        with pytest.raises(ConfigEntryNotReady):
-            await async_setup_entry(hass, config_entry)
+        await async_setup_entry(hass, config_entry)
 
 
 @pytest.mark.asyncio

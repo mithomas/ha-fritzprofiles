@@ -36,7 +36,7 @@ def skip_notifications_fixture():
 @pytest.fixture(autouse=True)
 def enable_custom_integrations_fixture(enable_custom_integrations):
     """Enable custom integrations for tests."""
-    yield
+    return
 
 
 # This fixture, when used, will result in calls to load_device_profiles to return

@@ -2,8 +2,10 @@
 
 from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
-from homeassistant.components.select import DOMAIN as SELECT_DOMAIN
-from homeassistant.components.select import SERVICE_SELECT_OPTION
+from homeassistant.components.select import (
+    DOMAIN as SELECT_DOMAIN,
+    SERVICE_SELECT_OPTION,
+)
 from homeassistant.const import ATTR_ENTITY_ID, ATTR_OPTION
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -18,6 +20,7 @@ from custom_components.ha_fritzprofiles.select import (
 
 @pytest.fixture(name="coordinator")
 def coordinator_fixture(coordinator_data):
+    """Fixture for a mocked coordinator."""
     coordinator = MagicMock()
     coordinator.data = coordinator_data
     coordinator.async_request_refresh = AsyncMock()
@@ -112,7 +115,11 @@ async def test_select_service_calls_client(hass, mock_config, coordinator_data):
 
         coordinator = hass.data[DOMAIN][config_entry.entry_id]
         with patch.object(
-            coordinator.hass, "async_add_executor_job", new=AsyncMock(side_effect=_run_job)
+            coordinator.hass,
+            "async_add_executor_job",
+            new=AsyncMock(
+                side_effect=_run_job,
+            ),
         ) as async_add_executor_job:
             entity_id = "select.iphone"
             state = hass.states.get(entity_id)
@@ -162,6 +169,5 @@ async def test_select_option_unknown_profile_raises(coordinator):
     coordinator.hass.async_add_executor_job = AsyncMock()
     coordinator.data.profiles_by_name = {"Standard": "profile1"}
 
-    with patch.object(entity, "async_write_ha_state"):
-        with pytest.raises(KeyError):
-            await entity.async_select_option("Missing")
+    with patch.object(entity, "async_write_ha_state"), pytest.raises(KeyError):
+        await entity.async_select_option("Missing")
