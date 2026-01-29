@@ -1,4 +1,5 @@
 """HaFritzProfilesEntity class"""
+
 import logging
 
 from homeassistant.components.select import SelectEntity

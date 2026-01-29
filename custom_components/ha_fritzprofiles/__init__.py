@@ -3,6 +3,7 @@ Custom integration for AVM FRITZ!Box device access profiles in Home Assistant.
 
 For more details about this integration, please see https://github.com/mithomas/ha-fritzprofiles
 """
+
 import asyncio
 import logging
 

@@ -3,6 +3,7 @@ Client library to read and update AVM FRITZ!Box device access profiles by parsin
 
 Originally based on https://github.com/eifinger/fritz-switch-profiles by Florian Pigorsch, Kevin Eifinger & contributors.
 """
+
 import hashlib
 import logging
 from dataclasses import dataclass

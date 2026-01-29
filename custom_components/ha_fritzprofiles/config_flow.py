@@ -1,4 +1,5 @@
 """Adds config flow for AVM FRITZ!Box device access profiles."""
+
 import voluptuous as vol
 from homeassistant import config_entries
 

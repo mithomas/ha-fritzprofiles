@@ -1,4 +1,5 @@
 """Test AVM FRITZ!Box Access Profiles switch."""
+
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 # pylint: disable=protected-access
