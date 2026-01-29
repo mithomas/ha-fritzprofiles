@@ -2,8 +2,6 @@
 
 from custom_components.ha_fritzprofiles.const import (
     CONF_PASSWORD,
-)
-from custom_components.ha_fritzprofiles.const import (
     CONF_USERNAME,
 )
 

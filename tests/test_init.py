@@ -1,13 +1,12 @@
 """Test AVM FRITZ!Box Access Profiles setup process."""
 
 import pytest
+from homeassistant.exceptions import ConfigEntryNotReady
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
 from custom_components.ha_fritzprofiles import (
     async_reload_entry,
-)
-from custom_components.ha_fritzprofiles import (
     async_setup_entry,
-)
-from custom_components.ha_fritzprofiles import (
     async_unload_entry,
 )
 from custom_components.ha_fritzprofiles.const import (
@@ -16,8 +15,6 @@ from custom_components.ha_fritzprofiles.const import (
 from custom_components.ha_fritzprofiles.coordinator import (
     HaFritzProfilesCoordinatorData,
 )
-from homeassistant.exceptions import ConfigEntryNotReady
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from .const import MOCK_CONFIG
 
