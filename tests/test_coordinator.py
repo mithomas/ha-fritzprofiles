@@ -32,6 +32,31 @@ def test_coordinator_data_deduplicates_devices():
     assert data.profiles_by_name == {"Standard": "profile1", "Limited": "profile2"}
 
 
+def test_coordinator_data_empty():
+    """Test empty data yields empty maps."""
+    raw_data = FritzProfileDeviceData([], {})
+
+    data = HaFritzProfilesCoordinatorData(raw_data)
+
+    assert data.devices_by_name == {}
+    assert data.profiles_by_id == {}
+    assert data.profiles_by_name == {}
+
+
+def test_coordinator_data_all_duplicates_removed():
+    """Test all devices removed when names are duplicated."""
+    devices = [
+        FritzProfileDevice(id="id1", name="Phone", profile_id="profile1"),
+        FritzProfileDevice(id="id2", name="Phone", profile_id="profile2"),
+    ]
+    profiles = {"profile1": "Standard", "profile2": "Limited"}
+    raw_data = FritzProfileDeviceData(devices, profiles)
+
+    data = HaFritzProfilesCoordinatorData(raw_data)
+
+    assert data.devices_by_name == {}
+
+
 @pytest.mark.asyncio
 async def test_coordinator_update_success(hass, fritz_device_data):
     """Test coordinator update returns wrapped data."""

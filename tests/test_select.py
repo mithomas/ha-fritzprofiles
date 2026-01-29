@@ -10,7 +10,10 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ha_fritzprofiles.const import DOMAIN
 from custom_components.ha_fritzprofiles.fritz_profile_switch import FritzProfileDevice
-from custom_components.ha_fritzprofiles.select import HaFritzProfilesEntity
+from custom_components.ha_fritzprofiles.select import (
+    HaFritzProfilesEntity,
+    async_setup_entry,
+)
 
 
 @pytest.fixture(name="coordinator")
@@ -129,3 +132,36 @@ async def test_select_service_calls_client(hass, mock_config, coordinator_data):
     updated_state = hass.states.get(entity_id)
     assert updated_state.state == "Limited"
     assert "options" in updated_state.attributes
+
+
+@pytest.mark.asyncio
+async def test_select_setup_entry_no_devices(hass, mock_config, coordinator_data):
+    """Test select setup skips when no devices are available."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=mock_config, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    coordinator_data.devices_by_name = {}
+    hass.data.setdefault(DOMAIN, {})[config_entry.entry_id] = MagicMock(
+        data=coordinator_data
+    )
+
+    add_entities = MagicMock()
+    await async_setup_entry(hass, config_entry, add_entities)
+
+    add_entities.assert_called_once_with([])
+
+
+@pytest.mark.asyncio
+async def test_select_option_unknown_profile_raises(coordinator):
+    """Test selecting an unknown profile raises KeyError."""
+    device = FritzProfileDevice(id="id", name="iPhone", profile_id="profile1")
+    entity = HaFritzProfilesEntity(coordinator, device)
+    entity.hass = MagicMock()
+    entity.entity_id = "select.iphone"
+    coordinator.client = MagicMock()
+    coordinator.hass.async_add_executor_job = AsyncMock()
+    coordinator.data.profiles_by_name = {"Standard": "profile1"}
+
+    with patch.object(entity, "async_write_ha_state"):
+        with pytest.raises(KeyError):
+            await entity.async_select_option("Missing")
