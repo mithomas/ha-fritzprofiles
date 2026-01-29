@@ -1,6 +1,7 @@
 """Adds config flow for AVM FRITZ!Box device access profiles."""
 
 from homeassistant import config_entries
+import requests
 import voluptuous as vol
 
 from .const import CONF_PASSWORD, CONF_URL, CONF_USERNAME, DOMAIN
@@ -40,7 +41,7 @@ class HaFritzProfilesFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             )
             if valid:
                 return self.async_create_entry(
-                    title=f"FRITZ!Box ({user_input[CONF_USERNAME]} @ {user_input[CONF_URL]})",
+                    title=f"FRITZ!Box ({user_input[CONF_USERNAME]} @ {user_input[CONF_URL]})",  # noqa: E501
                     data=user_input,
                 )
             self._errors["base"] = "auth"
@@ -66,6 +67,5 @@ class HaFritzProfilesFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             return await self.hass.async_add_executor_job(
                 FritzProfileSwitch(url, username, password).check_credentials
             )
-        except Exception:  # pylint: disable=broad-except
-            pass
-        return False
+        except (PermissionError, requests.RequestException):
+            return False

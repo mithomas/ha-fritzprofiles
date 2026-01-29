@@ -1,4 +1,4 @@
-"""HaFritzProfilesEntity class"""
+"""HaFritzProfilesEntity class."""
 
 import logging
 
@@ -35,15 +35,16 @@ class HaFritzProfilesEntity(CoordinatorEntity, SelectEntity):
         self._update_values(device)
 
     @property
-    def unique_id(self):  # pylint: disable=missing-function-docstring
-        return self.device.name  # add a comment here why on earth
-
-    @property
-    def name(self):  # pylint: disable=missing-function-docstring
+    def unique_id(self):
+        # Device names are unique after coordinator de-duplication.
         return self.device.name
 
     @property
-    def icon(self):  # pylint: disable=missing-function-docstring
+    def name(self):
+        return self.device.name
+
+    @property
+    def icon(self):
         return "mdi:web"
 
     def _update_values(self, device) -> None:
@@ -66,10 +67,13 @@ class HaFritzProfilesEntity(CoordinatorEntity, SelectEntity):
     ) -> None:
         """Handles a new selection.
 
-        Performs a refresh first as device id might have changed after a new profile has been set outside of HA.
-        (Device ids are generally 'landeviceNNNN' when using the standard profile and 'userNNNN' when using a custom one.)
+        Performs a refresh first as device id might have changed after a new
+        profile has been set outside of HA. Device IDs are generally
+        "landeviceNNNN" when using the standard profile and "userNNNN" when using
+        a custom one.
 
-        Not doing so would mean that further profile changes are not possible, if there has been a user profile selected before.
+        Not doing so would mean that further profile changes are not possible
+        if there has been a user profile selected before.
         """
         _LOGGER.info("Selected profile '%s' for device %s", profile, self.unique_id)
         await self.coordinator.async_request_refresh()

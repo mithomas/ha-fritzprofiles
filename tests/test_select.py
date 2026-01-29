@@ -15,8 +15,6 @@ from custom_components.ha_fritzprofiles.const import DOMAIN
 from custom_components.ha_fritzprofiles.fritz_profile_switch import FritzProfileDevice
 from custom_components.ha_fritzprofiles.select import HaFritzProfilesEntity
 
-from .const import MOCK_CONFIG
-
 
 class TestHaFritzProfilesEntity:
     class TestHandleCoordinatorUpdate:
@@ -43,8 +41,8 @@ class TestHaFritzProfilesEntity:
         def test_init(self, entity):
             assert entity.name == "Device"
             assert entity.unique_id == "Device"
-            assert entity._attr_current_option == "profile"
-            assert entity._attr_options == ["profile", "profile2"]
+            assert entity.current_option == "profile"
+            assert entity.options == ["profile", "profile2"]
 
         def test_updated_id(self, entity, coordinator):
             coordinator.data.devices_by_name = {
@@ -53,7 +51,7 @@ class TestHaFritzProfilesEntity:
                 )
             }
 
-            entity._handle_coordinator_update()
+            entity._handle_coordinator_update()  # noqa: SLF001
 
             assert entity.name == "Device"
             assert entity.device.id == "id2"
@@ -65,30 +63,31 @@ class TestHaFritzProfilesEntity:
                 )
             }
 
-            entity._handle_coordinator_update()
+            entity._handle_coordinator_update()  # noqa: SLF001
 
             assert entity.name == "Device"
-            assert entity._attr_current_option == "profile2"
+            assert entity.current_option == "profile2"
 
         def test_unavailable_in_update(self, coordinator, entity):
             coordinator.data.devices_by_name = {}
 
-            entity._handle_coordinator_update()
+            entity._handle_coordinator_update()  # noqa: SLF001
 
             assert entity.name == "Device"
             assert entity.device.id == "id"
 
 
 @pytest.mark.skip
-async def test_switch_services(hass):
+async def test_switch_services(hass, mock_config):
     """Test switch services."""
     # Create a mock entry so we don't have to go through config flow
-    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry = MockConfigEntry(domain=DOMAIN, data=mock_config, entry_id="test")
     assert await async_setup_entry(hass, config_entry)
     await hass.async_block_till_done()
 
-    # Functions/objects can be patched directly in test code as well and can be used to test
-    # additional things, like whether a function was called or what arguments it was called with
+    # Functions/objects can be patched directly in test code and can be used to
+    # test additional things, like whether a function was called or what
+    # arguments it was called with.
     with patch("custom_components.HaProfilesApiClient.async_set_title") as title_func:
         await hass.services.async_call(
             "SWITCH",

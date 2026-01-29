@@ -1,7 +1,9 @@
-"""\
-Client library to read and update AVM FRITZ!Box device access profiles by parsing kids_userlist.lua. Loads the whole list in one.
+"""Client library for AVM FRITZ!Box device access profiles.
 
-Originally based on https://github.com/eifinger/fritz-switch-profiles by Florian Pigorsch, Kevin Eifinger & contributors.
+Parses kids_userlist.lua and loads the whole list in one call.
+
+Originally based on https://github.com/eifinger/fritz-switch-profiles by Florian
+Pigorsch, Kevin Eifinger & contributors.
 """
 
 from dataclasses import dataclass
@@ -15,6 +17,7 @@ import requests
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
 INVALID_SID = "0000000000000000"
+DATA_CELL_COLUMNS = 5
 
 
 @dataclass
@@ -107,7 +110,7 @@ class FritzProfileSwitch:
         response.raise_for_status()
         return response.text
 
-    def set_device_profile(self, device_id, profile_id):  # pylint: disable=missing-function-docstring
+    def set_device_profile(self, device_id, profile_id):
         self._login()
         self._set_device_profile(device_id, profile_id)
         self._logout()
@@ -127,7 +130,7 @@ class FritzProfileSwitch:
         )
         response.raise_for_status()
 
-    def check_credentials(self) -> bool:  # pylint: disable=missing-function-docstring
+    def check_credentials(self) -> bool:
         self._login()
 
         if self.sid == INVALID_SID:
@@ -185,4 +188,4 @@ def _get_sid_challenge(url):
 
 def _is_data_cell(cell) -> bool:
     """Checks whether the given cell is a device-profile data cell."""
-    return cell and len(cell) == 5
+    return cell and len(cell) == DATA_CELL_COLUMNS

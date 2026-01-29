@@ -39,9 +39,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass, client=FritzProfileSwitch(url, username, password)
     )
 
-    # Wait a bit so login doesn't clash with the AVM FRITZ!SmartHome integration (which is likely
-    # also installed) - running at the same time causes the other one to timeout during HA start-up,
-    # requiring manual intervention. (This means longer setup and start-up time here.)
+    # Wait a bit so login doesn't clash with the AVM FRITZ!SmartHome integration
+    # (which is likely also installed). Running at the same time causes the
+    # other one to timeout during HA start-up, requiring manual intervention.
+    # This means longer setup and start-up time here.
     await asyncio.sleep(10)
     await coordinator.async_refresh()
 
