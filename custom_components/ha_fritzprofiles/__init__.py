@@ -11,12 +11,14 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.core_config import Config
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers import config_validation as cv
 
 from .const import CONF_PASSWORD, CONF_URL, CONF_USERNAME, DOMAIN, PLATFORMS, VERSION
 from .coordinator import HaFritzProfilesDataUpdateCoordinator
 from .fritz_profile_switch import FritzProfileSwitch
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: Config) -> bool:
