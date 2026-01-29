@@ -1,4 +1,5 @@
 """Global fixtures for AVM FRITZ!Box Access Profiles integration."""
+
 from unittest.mock import patch
 
 import pytest

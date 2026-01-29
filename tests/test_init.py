@@ -1,4 +1,5 @@
 """Test AVM FRITZ!Box Access Profiles setup process."""
+
 import pytest
 from custom_components.ha_fritzprofiles import (
     async_reload_entry,

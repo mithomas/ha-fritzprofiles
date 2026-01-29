@@ -1,4 +1,5 @@
 """Constants for AVM FRITZ!Box Device Access Profiles."""
+
 # Base component constants
 NAME = "AVM FRITZ!Box Device Access Profiles"
 DOMAIN = "ha_fritzprofiles"

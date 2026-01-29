@@ -1,4 +1,5 @@
 """Data update coordinator for AVM FRITZ!Box device access profiles."""
+
 import logging
 from collections import Counter
 from datetime import timedelta
@@ -11,7 +12,6 @@ from .const import DOMAIN
 from .fritz_profile_switch import FritzProfileDevice
 from .fritz_profile_switch import FritzProfileDeviceData
 from .fritz_profile_switch import FritzProfileSwitch
-
 
 SCAN_INTERVAL = timedelta(minutes=60)
 
