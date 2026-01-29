@@ -21,11 +21,10 @@ repos:
     hooks:
       - id: codespell
         args:
-          - --ignore-words-list=afe,alot,ans,automations,ba,behaviour,clen,continous,deconz,dout,extention,falsy,flicker,fo,fom,foor,frequence,gpio,groe,groud,iam,incomfort,iten,kep,kown,licht,linq,magent,matchin,migratoin,muc,mull,nd,nma,notificatoin,numer,optin,pased,presance,protcol,relais,relays,tempertaure,zar
+          - --ignore-words=codespell.txt
           - --quiet-level=2
-          - --skip=./.*,*.csv,*.lock,./tests/fixtures/*,./tests/fixtures/**,./tests/fixtures/**/**
         exclude_types: [json]
-        exclude: tests/fixtures/home-assistant.io
+        exclude: tests/fixtures/home-assistant.io|tests/resources/
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.13.0
     hooks:
@@ -38,12 +37,20 @@ repos:
     rev: v1.37.1
     hooks:
       - id: yamllint
-  - repo: https://github.com/abravalheri/pyupgrade
-    rev: v0.7.1
+  - repo: https://github.com/cdce8p/python-typing-update
+    rev: v0.6.0
     hooks:
+      # Run `python-typing-update` hook manually from time to time
+      # to update python typing syntax.
+      # Will require manual work, before submitting changes!
+      # prek run --hook-stage manual python-typing-update --all-files
       - id: python-typing-update
-        files: ^(custom_components/ha_fritzprofiles|tests)/.+\.py$
         stages: [manual]
+        args:
+          - --py311-plus
+          - --force
+          - --keep-updates
+        files: ^(custom_components/ha_fritzprofiles|tests)/.+\.py$
   - repo: https://github.com/rbubley/mirrors-prettier
     rev: v3.6.2
     hooks:

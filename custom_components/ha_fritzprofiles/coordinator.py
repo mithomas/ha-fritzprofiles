@@ -27,7 +27,7 @@ class HaFritzProfilesCoordinatorData:
     profiles_by_name: dict[str, str]
 
     def __init__(self, fritz_profile_device_data):
-        # remove duplicates per name since this is going to be our unique_id
+        # Remove duplicates per name since this is going to be our unique_id.
         counts = Counter(device.name for device in fritz_profile_device_data.devices)
         unique_devices_per_name = [
             device
@@ -40,11 +40,14 @@ class HaFritzProfilesCoordinatorData:
 
         self.profiles_by_id = fritz_profile_device_data.profiles_by_id
         self.profiles_by_name = {
-            name: id for id, name in fritz_profile_device_data.profiles_by_id.items()
+            name: profile_id
+            for profile_id, name in fritz_profile_device_data.profiles_by_id.items()
         }
 
 
-class HaFritzProfilesDataUpdateCoordinator(DataUpdateCoordinator):  # pylint: disable=missing-class-docstring
+class HaFritzProfilesDataUpdateCoordinator(DataUpdateCoordinator):
+    """Manage updates for Fritz profile data."""
+
     def __init__(
         self,
         hass: HomeAssistant,
@@ -57,14 +60,16 @@ class HaFritzProfilesDataUpdateCoordinator(DataUpdateCoordinator):  # pylint: di
 
     async def _async_update_data(
         self,
-    ) -> FritzProfileDeviceData:  # pylint: disable=missing-function-docstring
+    ) -> FritzProfileDeviceData:
+        """Fetch data from the Fritz client."""
         try:
             _LOGGER.info("Updating device profile data")
             data = HaFritzProfilesCoordinatorData(
                 await self.hass.async_add_executor_job(self.client.load_device_profiles)
             )
             _LOGGER.info("Loaded %d unique devices", len(data.devices_by_name))
-            return data
         except Exception as exception:
-            _LOGGER.error(exception, exc_info=True)
-            raise UpdateFailed() from exception
+            _LOGGER.exception("Failed to update device profile data")
+            raise UpdateFailed from exception
+        else:
+            return data

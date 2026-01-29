@@ -47,7 +47,7 @@ People _love_ thorough bug reports. I'm not even kidding.
 Use [black](https://github.com/ambv/black) and [prettier](https://prettier.io/)
 to make sure the code follows the style.
 
-Or use the `pre-commit` settings implemented in this repository
+Or use the `prek` settings implemented in this repository
 (see dedicated section below).
 
 ## Test your code modification
@@ -60,7 +60,7 @@ Home Assistant instance running and already configured with the included
 [`.devcontainer/configuration.yaml`](./.devcontainer/configuration.yaml)
 file.
 
-You can use the `pre-commit` settings implemented in this repository to have
+You can use the `prek` settings implemented in this repository to have
 linting tool checking your contributions (see deicated section below).
 
 You should also verify that existing [tests](./tests) are still working
@@ -74,7 +74,7 @@ source venv/bin/activate
 # Install requirements
 pip install -r requirements_test.txt
 # Run tests and get a summary of successes/failures and code coverage
-pytest --durations=10 --cov-report term-missing --cov=custom_components.https://github.com/mithomas/ha-fritzprofiles tests
+pytest --durations=10 --cov-report term-missing --cov=custom_components.ha_fritzprofiles tests
 ```
 
 If any of the tests fail, make the necessary changes to the tests as part of
@@ -82,22 +82,15 @@ your changes to the integration.
 
 ## Pre-commit
 
-You can use the [pre-commit](https://pre-commit.com/) settings included in the
-repostory to have code style and linting checks.
+You can use the [prek](https://github.com/pre-commit/prek) settings included in the
+repository to have code style and linting checks.
 
-With `pre-commit` tool already installed,
-activate the settings of the repository:
+With the `prek` tool already installed, you can run the checks locally.
 
-```console
-$ pre-commit install
-```
-
-Now the pre-commit tests will be done every time you commit.
-
-You can run the tests on all repository file with the command:
+You can run the tests on all repository files with the command:
 
 ```console
-$ pre-commit run --all-files
+$ prek run --all-files
 ```
 
 ## License

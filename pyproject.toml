@@ -106,6 +106,8 @@ select = [
 ignore = [
   "ASYNC109", # Async function definition with a `timeout` parameter Use `asyncio.timeout` instead
   "ASYNC110", # Use `asyncio.Event` instead of awaiting `asyncio.sleep` in a `while` loop
+  "D102", # Missing docstring in public method
+  "D107", # Missing docstring in `__init__`
   "TC006", # Add quotes to type expression in typing.cast()
   "TRY003", # Avoid specifying long messages outside the exception class
   "TRY400", # Use logging.exception instead of logging.error
@@ -160,7 +162,7 @@ split-on-trailing-comma = false
 "script/*" = ["T20"]
 # Allow relative imports within this integration
 "custom_components/ha_fritzprofiles/**" = ["TID252", "PTH"]
-"tests/**" = ["PTH"]
+"tests/**" = ["D101", "D106", "PTH"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 25
