@@ -6,8 +6,8 @@
 # pylint: disable=wrong-import-order
 from unittest.mock import MagicMock, call, patch
 
-import pytest
 from homeassistant.const import ATTR_ENTITY_ID
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ha_fritzprofiles import async_setup_entry

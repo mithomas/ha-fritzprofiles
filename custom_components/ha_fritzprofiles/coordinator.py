@@ -1,8 +1,8 @@
 """Data update coordinator for AVM FRITZ!Box device access profiles."""
 
-import logging
 from collections import Counter
 from datetime import timedelta
+import logging
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -28,13 +28,11 @@ class HaFritzProfilesCoordinatorData:
 
     def __init__(self, fritz_profile_device_data):
         # remove duplicates per name since this is going to be our unique_id
-        counts = Counter(
-            getattr(device, "name") for device in fritz_profile_device_data.devices
-        )
+        counts = Counter(device.name for device in fritz_profile_device_data.devices)
         unique_devices_per_name = [
             device
             for device in fritz_profile_device_data.devices
-            if counts[getattr(device, "name")] == 1
+            if counts[device.name] == 1
         ]
         self.devices_by_name = {
             device.name: device for device in unique_devices_per_name
@@ -46,9 +44,7 @@ class HaFritzProfilesCoordinatorData:
         }
 
 
-class HaFritzProfilesDataUpdateCoordinator(
-    DataUpdateCoordinator
-):  # pylint: disable=missing-class-docstring
+class HaFritzProfilesDataUpdateCoordinator(DataUpdateCoordinator):  # pylint: disable=missing-class-docstring
     def __init__(
         self,
         hass: HomeAssistant,

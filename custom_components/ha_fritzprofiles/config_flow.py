@@ -1,7 +1,7 @@
 """Adds config flow for AVM FRITZ!Box device access profiles."""
 
-import voluptuous as vol
 from homeassistant import config_entries
+import voluptuous as vol
 
 from .const import CONF_PASSWORD, CONF_URL, CONF_USERNAME, DOMAIN
 from .fritz_profile_switch import FritzProfileSwitch
@@ -27,7 +27,6 @@ class HaFritzProfilesFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input=None):
         """Handle a flow initialized by the user."""
-
         self._errors = {}
 
         if self._async_current_entries():
@@ -52,7 +51,6 @@ class HaFritzProfilesFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def _show_config_form(self, user_input):  # pylint: disable=unused-argument
         """Shows the configuration form to edit location data."""
-
         return self.async_show_form(
             step_id="user",
             data_schema=CONFIG_SCHEMA,

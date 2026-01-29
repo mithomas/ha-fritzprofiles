@@ -1,31 +1,53 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v6.0.0
     hooks:
       - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+        stages: [manual]
+      - id: check-json
+        exclude: (.vscode|.devcontainer)
+      - id: check-symlinks
       - id: check-yaml
       - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: no-commit-to-branch
+        args: [--branch, dev, --branch, master, --branch, rc]
       - id: trailing-whitespace
-  - repo: local
+        args: [--markdown-linebreak-ext=md]
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
     hooks:
-      - id: black
-        name: black
-        entry: black
-        language: system
-        types: [python]
-        require_serial: true
-      - id: ruff-imports
-        name: Ruff import sorting
-        entry: ruff check --select I --fix
-        language: system
-        types: [python]
-      - id: flake8
-        name: flake8
-        entry: flake8
-        language: system
-        types: [python]
-        require_serial: true
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.0.0
+      - id: codespell
+        args:
+          - --ignore-words-list=afe,alot,ans,automations,ba,behaviour,clen,continous,deconz,dout,extention,falsy,flicker,fo,fom,foor,frequence,gpio,groe,groud,iam,incomfort,iten,kep,kown,licht,linq,magent,matchin,migratoin,muc,mull,nd,nma,notificatoin,numer,optin,pased,presance,protcol,relais,relays,tempertaure,zar
+          - --quiet-level=2
+          - --skip=./.*,*.csv,*.lock,./tests/fixtures/*,./tests/fixtures/**,./tests/fixtures/**/**
+        exclude_types: [json]
+        exclude: tests/fixtures/home-assistant.io
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.13.0
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+        files: ^((custom_components/ha_fritzprofiles|tests)/.+)?[^/]+\.(py|pyi)$
+      - id: ruff-format
+        files: ^((custom_components/ha_fritzprofiles|tests)/.+)?[^/]+\.(py|pyi)$
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.37.1
+    hooks:
+      - id: yamllint
+  - repo: https://github.com/abravalheri/pyupgrade
+    rev: v0.7.1
+    hooks:
+      - id: python-typing-update
+        files: ^(custom_components/ha_fritzprofiles|tests)/.+\.py$
+        stages: [manual]
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: v3.6.2
     hooks:
       - id: prettier
+        additional_dependencies:
+          - prettier@3.6.2
+          - prettier-plugin-sort-json@4.1.1
