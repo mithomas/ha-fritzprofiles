@@ -1,63 +1,91 @@
 """Test AVM FRITZ!Box Access Profiles setup process."""
 
+from unittest.mock import AsyncMock, patch
+
 from homeassistant.exceptions import ConfigEntryNotReady
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ha_fritzprofiles import (
     async_reload_entry,
+    async_setup,
     async_setup_entry,
-    async_unload_entry,
 )
 from custom_components.ha_fritzprofiles.const import DOMAIN
 from custom_components.ha_fritzprofiles.coordinator import (
-    HaFritzProfilesCoordinatorData,
+    HaFritzProfilesDataUpdateCoordinator,
 )
 
 
-# We can pass fixtures as defined in conftest.py to tell pytest to use the
-# fixture for a given test. We can also leverage fixtures and mocks that are
-# available in Home Assistant using the
-# pytest_homeassistant_custom_component plugin. Assertions allow you to verify
-# that the return value of whatever is on the left side of the assertion matches
-# with the right side.
-@pytest.mark.skip
-async def test_setup_unload_and_reload_entry(hass, bypass_get_data, mock_config):
-    """Test entry setup and unload."""
-    # Create a mock entry so we don't have to go through config flow
+@pytest.mark.asyncio
+async def test_async_setup_returns_true(hass):
+    """Test YAML setup shortcut."""
+    assert await async_setup(hass, {}) is True
+
+
+@pytest.mark.asyncio
+async def test_setup_and_unload_entry(hass, mock_config, coordinator_data):
+    """Test entry setup and unload via config entries."""
     config_entry = MockConfigEntry(domain=DOMAIN, data=mock_config, entry_id="test")
+    config_entry.add_to_hass(hass)
 
-    # Set up the entry and assert that the values set during setup are where we
-    # expect them to be. Because we have patched
-    # FritzProfileSwitch.load_device_profiles, no code from
-    # custom_components/ha_fritzprofiles/fritz_profile_switch.py actually runs.
-    assert await async_setup_entry(hass, config_entry)
-    assert DOMAIN in hass.data
-    assert config_entry.entry_id in hass.data[DOMAIN]
+    with (
+        patch("custom_components.ha_fritzprofiles.asyncio.sleep", new=AsyncMock()),
+        patch(
+            "custom_components.ha_fritzprofiles.coordinator.HaFritzProfilesDataUpdateCoordinator._async_update_data",
+            new=AsyncMock(return_value=coordinator_data),
+        ),
+    ):
+        assert await hass.config_entries.async_setup(config_entry.entry_id)
+        await hass.async_block_till_done()
+
     assert isinstance(
-        hass.data[DOMAIN][config_entry.entry_id], HaFritzProfilesCoordinatorData
+        hass.data[DOMAIN][config_entry.entry_id], HaFritzProfilesDataUpdateCoordinator
     )
+    assert hass.data[DOMAIN][config_entry.entry_id].platforms == ["select"]
 
-    # Reload the entry and assert that the data from above is still there.
-    assert await async_reload_entry(hass, config_entry) is None
-    assert DOMAIN in hass.data
-    assert config_entry.entry_id in hass.data[DOMAIN]
-    assert isinstance(
-        hass.data[DOMAIN][config_entry.entry_id], HaFritzProfilesCoordinatorData
-    )
-
-    # Unload the entry and verify that the data has been removed.
-    assert await async_unload_entry(hass, config_entry)
+    assert await hass.config_entries.async_unload(config_entry.entry_id)
+    await hass.async_block_till_done()
     assert config_entry.entry_id not in hass.data[DOMAIN]
 
 
-@pytest.mark.skip
-async def test_setup_entry_exception(hass, error_on_get_data, mock_config):
-    """Test ConfigEntryNotReady when API raises an exception during entry setup."""
+@pytest.mark.asyncio
+async def test_setup_entry_not_ready(hass, mock_config):
+    """Test ConfigEntryNotReady when refresh fails."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=mock_config, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    async def _failed_refresh(self):
+        self.last_update_success = False
+
+    with (
+        patch("custom_components.ha_fritzprofiles.asyncio.sleep", new=AsyncMock()),
+        patch.object(
+            HaFritzProfilesDataUpdateCoordinator,
+            "async_refresh",
+            _failed_refresh,
+        ),
+    ):
+        with pytest.raises(ConfigEntryNotReady):
+            await async_setup_entry(hass, config_entry)
+
+
+@pytest.mark.asyncio
+async def test_async_reload_entry_calls_helpers(hass, mock_config):
+    """Test reload calls unload and setup helpers."""
     config_entry = MockConfigEntry(domain=DOMAIN, data=mock_config, entry_id="test")
 
-    # In this case we are testing the condition where async_setup_entry raises
-    # ConfigEntryNotReady using the `error_on_get_data` fixture which simulates
-    # an error.
-    with pytest.raises(ConfigEntryNotReady):
-        assert await async_setup_entry(hass, config_entry)
+    with (
+        patch(
+            "custom_components.ha_fritzprofiles.async_unload_entry",
+            new=AsyncMock(return_value=True),
+        ) as unload_entry,
+        patch(
+            "custom_components.ha_fritzprofiles.async_setup_entry",
+            new=AsyncMock(return_value=True),
+        ) as setup_entry,
+    ):
+        await async_reload_entry(hass, config_entry)
+
+    unload_entry.assert_awaited_once_with(hass, config_entry)
+    setup_entry.assert_awaited_once_with(hass, config_entry)

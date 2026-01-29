@@ -30,6 +30,28 @@
 - Name tests `tests/test_*.py` and test functions `test_*`.
 - When changing behavior, add/adjust tests to keep coverage green.
 
+## Home Assistant Testing Conventions
+
+- Use Home Assistant test helpers/fixtures: `hass`, `async_setup_component`, `async_block_till_done`.
+- Prefer async tests for HA interactions and assert via the HA state machine (`hass.states.get`).
+- Use built-in services (e.g., `select.select_option`) and validate side effects via state/attributes.
+- Use `caplog` to assert expected warnings/errors from the integration.
+
+## Pytest Best Practices for This Repo
+
+- Use fixtures for setup; avoid module-level state and setup/teardown functions.
+- Use `pytest.mark.parametrize` for variants and error-path coverage.
+- Mock at the boundary (FRITZ!Box/network/I/O); use `autospec=True` where possible.
+- Assert behavior (state changes, service calls, logged errors), not “no exception”.
+- Keep tests deterministic: no real network calls, no sleeps, no wall-clock time.
+- Avoid brittle assertions (ordering, full dict equality when only subsets matter).
+
+## Required Mocking
+
+- Always mock FRITZ!Box interactions and network I/O (`requests`, `FritzProfileSwitch` methods).
+- Mock executor jobs (`hass.async_add_executor_job`) when verifying side effects.
+- Patch `asyncio.sleep` in setup paths to keep tests fast.
+
 ## Commit & Pull Request Guidelines
 
 - Recent commits often use short, descriptive prefixes (e.g., `build(deps): …`, `Add …`, `Fix …`).
