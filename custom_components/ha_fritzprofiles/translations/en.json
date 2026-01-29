@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "FRITZ!Box Device Access Profiles",
-        "description": "If you need help with the configuration have a look here: https://github.com/mithomas/ha-fritzprofiles",
+        "description": "If you need help with the configuration, check the documentation at {docs_url}.",
         "data": {
           "url": "URL",
           "username": "Username",

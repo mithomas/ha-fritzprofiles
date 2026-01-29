@@ -59,6 +59,9 @@ class HaFritzProfilesFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=CONFIG_SCHEMA,
             errors=self._errors,
+            description_placeholders={
+                "docs_url": "https://github.com/mithomas/ha-fritzprofiles",
+            },
         )
 
     async def _test_credentials(self, url, username, password) -> bool:
