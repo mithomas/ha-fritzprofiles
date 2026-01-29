@@ -2,8 +2,8 @@
 
 from unittest.mock import patch
 
-import pytest
 from homeassistant import config_entries, data_entry_flow
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ha_fritzprofiles.const import DOMAIN, PLATFORMS
@@ -17,12 +17,15 @@ from .const import MOCK_CONFIG
 @pytest.fixture(autouse=True)
 def bypass_setup_fixture():
     """Prevent setup."""
-    with patch(
-        "custom_components.https://github.com/mithomas/ha-fritzprofiles.async_setup",
-        return_value=True,
-    ), patch(
-        "custom_components.https://github.com/mithomas/ha-fritzprofiles.async_setup_entry",
-        return_value=True,
+    with (
+        patch(
+            "custom_components.https://github.com/mithomas/ha-fritzprofiles.async_setup",
+            return_value=True,
+        ),
+        patch(
+            "custom_components.https://github.com/mithomas/ha-fritzprofiles.async_setup_entry",
+            return_value=True,
+        ),
     ):
         yield
 
@@ -63,7 +66,6 @@ async def test_successful_config_flow(hass, bypass_get_data):
 @pytest.mark.skip
 async def test_failed_config_flow(hass, error_on_get_data):
     """Test a failed config flow due to credential validation failure."""
-
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )

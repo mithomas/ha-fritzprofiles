@@ -1,7 +1,7 @@
 """Test AVM FRITZ!Box Access Profiles setup process."""
 
-import pytest
 from homeassistant.exceptions import ConfigEntryNotReady
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ha_fritzprofiles import (
@@ -9,9 +9,7 @@ from custom_components.ha_fritzprofiles import (
     async_setup_entry,
     async_unload_entry,
 )
-from custom_components.ha_fritzprofiles.const import (
-    DOMAIN,
-)
+from custom_components.ha_fritzprofiles.const import DOMAIN
 from custom_components.ha_fritzprofiles.coordinator import (
     HaFritzProfilesCoordinatorData,
 )
@@ -34,14 +32,16 @@ async def test_setup_unload_and_reload_entry(hass, bypass_get_data):
     # them to be. Because we have patched the HaProfilesDataUpdateCoordinator.async_get_data
     # call, no code from custom_components/https://github.com/mithomas/ha-fritzprofiles/api.py actually runs.
     assert await async_setup_entry(hass, config_entry)
-    assert DOMAIN in hass.data and config_entry.entry_id in hass.data[DOMAIN]
+    assert DOMAIN in hass.data
+    assert config_entry.entry_id in hass.data[DOMAIN]
     assert isinstance(
         hass.data[DOMAIN][config_entry.entry_id], HaFritzProfilesCoordinatorData
     )
 
     # Reload the entry and assert that the data from above is still there
     assert await async_reload_entry(hass, config_entry) is None
-    assert DOMAIN in hass.data and config_entry.entry_id in hass.data[DOMAIN]
+    assert DOMAIN in hass.data
+    assert config_entry.entry_id in hass.data[DOMAIN]
     assert isinstance(
         hass.data[DOMAIN][config_entry.entry_id], HaFritzProfilesCoordinatorData
     )

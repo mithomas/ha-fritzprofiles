@@ -4,9 +4,9 @@ Client library to read and update AVM FRITZ!Box device access profiles by parsin
 Originally based on https://github.com/eifinger/fritz-switch-profiles by Florian Pigorsch, Kevin Eifinger & contributors.
 """
 
+from dataclasses import dataclass
 import hashlib
 import logging
-from dataclasses import dataclass
 
 import lxml.etree
 import lxml.html
@@ -107,9 +107,7 @@ class FritzProfileSwitch:
         response.raise_for_status()
         return response.text
 
-    def set_device_profile(
-        self, device_id, profile_id
-    ):  # pylint: disable=missing-function-docstring
+    def set_device_profile(self, device_id, profile_id):  # pylint: disable=missing-function-docstring
         self._login()
         self._set_device_profile(device_id, profile_id)
         self._logout()
@@ -157,7 +155,7 @@ class FritzProfileSwitch:
             sid, challenge = _get_sid_challenge(url)
         if sid == INVALID_SID:
             raise PermissionError(
-                "Cannot login to {} using the supplied credentials.".format(self.url)
+                f"Cannot login to {self.url} using the supplied credentials."
             )
 
         _LOGGER.info("Logged into %s as %s", self.url, self.user)
