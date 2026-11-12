@@ -1,0 +1,51 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "FRITZ!Box Zugriffsprofile",
+        "description": "Gib die Verbindungsdaten für deine FRITZ!Box ein.",
+        "data": {
+          "url": "FRITZ!Box URL (z. B. https://fritz.box)",
+          "username": "Benutzername",
+          "password": "Passwort"
+        }
+      },
+      "reconfigure": {
+        "title": "FRITZ!Box Zugriffsprofile neu konfigurieren",
+        "description": "Aktualisiere die Verbindungsdaten oder Zugangsdaten deiner FRITZ!Box.",
+        "data": {
+          "url": "FRITZ!Box URL",
+          "username": "Benutzername",
+          "password": "Passwort"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbindung zur FRITZ!Box fehlgeschlagen",
+      "invalid_auth": "Ungültige Anmeldedaten (Benutzername oder Passwort falsch)",
+      "unknown": "Unerwarteter Fehler aufgetreten"
+    },
+    "abort": {
+      "already_configured": "Diese FRITZ!Box ist bereits konfiguriert.",
+      "reconfigure_successful": "Konfiguration erfolgreich aktualisiert."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "FRITZ!Box Profileinstellungen",
+        "description": "Lege fest, wie oft die Zugriffsprofile von der FRITZ!Box abgerufen werden.",
+        "data": {
+          "scan_interval": "Abfrageintervall (Sekunden)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "select": {
+      "internet_profile": {
+        "name": "Internet-Profil"
+      }
+    }
+  }
+}

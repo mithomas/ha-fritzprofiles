@@ -162,7 +162,7 @@ split-on-trailing-comma = false
 "script/*" = ["T20"]
 # Allow relative imports within this integration
 "custom_components/ha_fritzprofiles/**" = ["TID252", "PTH"]
-"tests/**" = ["D101", "D106", "PTH"]
+"tests/**" = ["D101", "D106", "PTH", "PLR2004", "SLF001"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 25
@@ -170,3 +170,8 @@ max-complexity = 25
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 property-decorators = ["propcache.api.cached_property"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "--cov=custom_components/ha_fritzprofiles --cov-report=term-missing"

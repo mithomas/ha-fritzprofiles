@@ -1,4 +1,4 @@
-# AVM FRITZ!Box Access Profiles
+# FRITZ!Box Access Profiles
 
 [![GitHub Release][releases-shield]][releases]
 [![License][license-shield]](LICENSE)
@@ -11,6 +11,18 @@
 [![Community Forum][forum-shield]][forum]
 
 Switch your FRITZ!Box device access profiles from Home Assistant.
+* **FRITZ!OS 8+ Compatible:** Uses the native `/api/v0/generic/` REST API instead of legacy HTML scraping.
+* **Automatic Profile Assignment:** Seamlessly updates existing device rules (`PUT`) or creates new user profile rules (`POST`) for previously unconfigured devices.
+* **Session Reuse:** Keeps the `AVM-SID` active across polling intervals with automatic `403` re-authentication to avoid flooding the FRITZ!Box event log.
+* **Smart Device Registry Integration:**
+  * Registers the FRITZ!Box as a parent hub device.
+  * Links network devices via `CONNECTION_NETWORK_MAC` to merge cleanly with existing devices from *FRITZ!Box Tools*, *Tasmota*, *ESPHome*, etc.
+  * Prioritizes user-defined `friendly_name` over raw hostnames.
+* **Full UI Configuration:**
+  * Initial setup flow with automatic HTTPS enforcement.
+  * **Reconfigure flow** to update credentials or URL without losing entity IDs.
+  * **Options flow** to customize the polling interval (10–3600 seconds, default: 30s).
+* **Localized:** Full English and German translations included.
 
 **This component will set up the following platforms.**
 
@@ -20,11 +32,11 @@ Switch your FRITZ!Box device access profiles from Home Assistant.
 
 ## Installation
 
-### Via HACS (preferred)
+### Via Marketplace (previously HACS) (preferred)
 
-1. [Install HACS](https://hacs.xyz/docs/setup/prerequisites/).
+1. [Install HACS](https://hacs.xyz/docs/setup/prerequisites/) if you use Homeassistant version before 2026-11
 2. Add `https://github.com/mithomas/ha-fritzprofiles/` [as a custom repository](https://hacs.xyz/docs/setup/prerequisites/)
-3. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "AVM FRITZ!Box Access Profiles", enter url, user and password to access your FRITZ!Box.
+3. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "FRITZ!Box Access Profiles", enter url, user and password to access your FRITZ!Box.
 
 ### Manually
 
@@ -34,7 +46,7 @@ Switch your FRITZ!Box device access profiles from Home Assistant.
 4. Download _all_ the files from the `custom_components/https://github.com/mithomas/ha-fritzprofiles/` directory (folder) in this repository.
 5. Place the files you downloaded in the new directory (folder) you created.
 6. Restart Home Assistant
-7. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "AVM FRITZ!Box Access Profiles", enter url, user and password to access your FRITZ!Box.
+7. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "FRITZ!Box Access Profiles", enter url, user and password to access your FRITZ!Box.
 
 ## Usage
 
@@ -42,7 +54,9 @@ All your uniquely named network devices will be set up as `select` entities, sho
 
 It is not advised to change the profiles of multiple devices at once (e.g. via a scene, script or automation) as this may likely overstrain your FRITZ!Box - if you actually have such a use case, the implementation of a respective service within this integration would be the far better way. Feel free to raise a PR or an issue for that :-).
 
-Changes made outside of Home Assistant will be synched hourly.
+## Managing New or Removed Devices
+
+To keep background polling fast and lightweight, new or deleted FRITZ!Box network devices are loaded during integration startup. If you add new devices to your network, simply select **Reload** from the integration's three-dot menu in Home Assistant.
 
 ## FAQ
 
@@ -52,7 +66,7 @@ This integration uses the device name (as defined in your FRITZ!Box) as the devi
 
 It can be that a device name is used more then once in your FRITZ!Box, usually when it is/was connected both via WIFI & cable LAN: Each network adapter has its own MAC address and as such a dedicated entry in your network device list.
 
-In such a case simply [rename](https://en.avm.de/service/knowledge-base/dok/FRITZ-Box-7590/791_Network-device-cannot-be-renamed/) them so that their names are different and wait for the next synchronization (may take up to 1 hour) or restart Home Assistant.
+In such a case simply [rename](https://fritz.com/en/apps/knowledge-base/fritz-box-7560/791_Network-device-cannot-be-renamed) them so that their names are different and wait for the next synchronization or restart Home Assistant.
 
 ### What is my user name?
 
@@ -66,13 +80,10 @@ Simply remove and re-add the integration with the new credentials. Don't worry, 
 
 The FRITZ!Box changes the device id on the respective form, depending on whether these device use the standard profile (then it's something like `landeviceNNNN`) or a user-defined profile (then it's something like `userNNNN`) - thus this not usable as an id as new entities would pop uup after every change. Also, there's no mapping from one to the other except the name so we might as well us that directly.
 
-### Why is the synchronization interval so long?
 
-Web scraping is slow and places a significant load on the FRITZ!Box, so there needs to be balance between timeliness and resource consumption.
+### Why not integrate this into the official [FRITZ!Box Tools](https://www.home-assistant.io/integrations/fritz/) integration?
 
-### Why not integrate this into the official [AVM FRITZ!Box Tools](https://www.home-assistant.io/integrations/fritz/) integration?
-
-Web scraping is not allowed for core integrations, see [ADR-0004](https://github.com/home-assistant/architecture/blob/master/adr/0004-webscraping.md). Unfortunately setting the device profile is not part of any API offered by the FRITZ!Box so far.
+Feel free to create a PR.
 
 ## Contributions are welcome!
 

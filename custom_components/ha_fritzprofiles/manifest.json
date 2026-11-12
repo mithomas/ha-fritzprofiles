@@ -1,12 +1,15 @@
 {
   "domain": "ha_fritzprofiles",
-  "name": "AVM FRITZ!Box Device Access Profiles",
+  "name": "FRITZ!Box Access Profiles",
   "codeowners": ["@mithomas"],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/mithomas/ha-fritzprofiles",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/mithomas/ha-fritzprofiles/issues",
-  "requirements": ["lxml"],
-  "version": "0.1.2"
+  "requirements": [
+    "lxml>=4.9.0",
+    "requests>=2.31.0"
+  ],
+  "version": "0.2.1"
 }

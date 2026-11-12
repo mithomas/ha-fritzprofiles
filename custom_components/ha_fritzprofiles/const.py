@@ -1,18 +1,25 @@
-"""Constants for AVM FRITZ!Box Device Access Profiles."""
+"""Constants for ha_fritzprofiles."""
 
-# Base component constants
-NAME = "AVM FRITZ!Box Device Access Profiles"
+from __future__ import annotations
+
+from homeassistant.const import Platform
+
 DOMAIN = "ha_fritzprofiles"
-VERSION = "0.0.1"
 
-ATTRIBUTION = "Data provided by http://jsonplaceholder.typicode.com/"
-ISSUE_URL = "https://github.com/mithomas/ha-fritzprofiles/issues"
+PLATFORMS: list[Platform] = [Platform.SELECT]
 
-# platforms
-PLATFORMS = ["select"]
-
-
-# configuration and options
+CONF_URL = "url"
 CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
-CONF_URL = "url"
+CONF_SCAN_INTERVAL = "scan_interval"
+
+DEFAULT_URL = "https://fritz.box"
+DEFAULT_SCAN_INTERVAL = 30
+
+STARTUP_MESSAGE = """
+-------------------------------------------------------------------
+%s
+Version: %s
+This is a custom integration!
+-------------------------------------------------------------------
+"""
