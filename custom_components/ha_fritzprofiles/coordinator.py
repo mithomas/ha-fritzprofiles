@@ -1,75 +1,73 @@
-"""Data update coordinator for AVM FRITZ!Box device access profiles."""
+"""DataUpdateCoordinator for ha_fritzprofiles."""
 
-from collections import Counter
+from __future__ import annotations
+
 from datetime import timedelta
 import logging
+from typing import TYPE_CHECKING
 
-from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import DOMAIN
-from .fritz_profile_switch import (
-    FritzProfileDevice,
-    FritzProfileDeviceData,
-    FritzProfileSwitch,
-)
+from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
 
-SCAN_INTERVAL = timedelta(minutes=60)
+if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.core import HomeAssistant
+
+    from .fritz_profile_switch import (
+        FritzProfileDevice,
+        FritzProfileDeviceData,
+        FritzProfileSwitch,
+    )
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
 
 class HaFritzProfilesCoordinatorData:
-    """Data class holding the complete set of device profile data."""
+    """Structured data provided by the coordinator to entities."""
 
-    devices_by_name: dict[str, FritzProfileDevice]
-    profiles_by_id: dict[str, str]
-    profiles_by_name: dict[str, str]
-
-    def __init__(self, fritz_profile_device_data):
-        # Remove duplicates per name since this is going to be our unique_id.
-        counts = Counter(device.name for device in fritz_profile_device_data.devices)
-        unique_devices_per_name = [
-            device
-            for device in fritz_profile_device_data.devices
-            if counts[device.name] == 1
-        ]
-        self.devices_by_name = {
-            device.name: device for device in unique_devices_per_name
+    def __init__(self, raw_data: FritzProfileDeviceData) -> None:
+        """Index devices by UID and profiles by UID and display name."""
+        self.devices_by_id: dict[str, FritzProfileDevice] = {
+            dev.id: dev for dev in raw_data.devices
         }
-
-        self.profiles_by_id = fritz_profile_device_data.profiles_by_id
-        self.profiles_by_name = {
-            name: profile_id
-            for profile_id, name in fritz_profile_device_data.profiles_by_id.items()
+        self.profiles_by_id: dict[str, str] = dict(raw_data.profiles_by_id)
+        self.profiles_by_name: dict[str, str] = {
+            name: uid for uid, name in raw_data.profiles_by_id.items()
         }
 
 
-class HaFritzProfilesDataUpdateCoordinator(DataUpdateCoordinator):
-    """Manage updates for Fritz profile data."""
+class HaFritzProfilesDataUpdateCoordinator(
+    DataUpdateCoordinator[HaFritzProfilesCoordinatorData]
+):
+    """Class to manage fetching FRITZ!Box device and profile data."""
+
+    config_entry: ConfigEntry
 
     def __init__(
         self,
         hass: HomeAssistant,
         client: FritzProfileSwitch,
+        scan_interval: int = DEFAULT_SCAN_INTERVAL,
+        config_entry: ConfigEntry | None = None,
     ) -> None:
+        """Initialize the data update coordinator."""
+        super().__init__(
+            hass,
+            _LOGGER,
+            config_entry=config_entry,
+            name=DOMAIN,
+            update_interval=timedelta(seconds=scan_interval),
+        )
         self.client = client
-        self.platforms = []
 
-        super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=SCAN_INTERVAL)
-
-    async def _async_update_data(
-        self,
-    ) -> FritzProfileDeviceData:
-        """Fetch data from the Fritz client."""
+    async def _async_update_data(self) -> HaFritzProfilesCoordinatorData:
+        """Fetch latest device and profile data from FRITZ!Box."""
         try:
-            _LOGGER.info("Updating device profile data")
-            data = HaFritzProfilesCoordinatorData(
-                await self.hass.async_add_executor_job(self.client.load_device_profiles)
+            raw_data = await self.hass.async_add_executor_job(
+                self.client.load_device_profiles
             )
-            _LOGGER.info("Loaded %d unique devices", len(data.devices_by_name))
-        except Exception as exception:
-            _LOGGER.exception("Failed to update device profile data")
-            raise UpdateFailed from exception
-        else:
-            return data
+        except Exception as err:
+            raise UpdateFailed(f"Error communicating with FRITZ!Box: {err}") from err
+
+        return HaFritzProfilesCoordinatorData(raw_data)

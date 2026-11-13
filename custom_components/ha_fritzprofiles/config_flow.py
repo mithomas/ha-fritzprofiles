@@ -1,71 +1,124 @@
-"""Adds config flow for AVM FRITZ!Box device access profiles."""
+"""Config flow for FRITZ!Box Access Profiles integration."""
 
-from homeassistant import config_entries
-import requests
+from __future__ import annotations
+
+import logging
+from typing import Any
+
+from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.const import CONF_PASSWORD, CONF_URL, CONF_USERNAME
 import voluptuous as vol
 
-from .const import CONF_PASSWORD, CONF_URL, CONF_USERNAME, DOMAIN
+from .const import DEFAULT_URL, DOMAIN
 from .fritz_profile_switch import FritzProfileSwitch
 
-CONFIG_SCHEMA = vol.Schema(
+_LOGGER = logging.getLogger(__name__)
+
+STEP_USER_DATA_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_URL, default="http://fritz.box"): str,
+        vol.Required(CONF_URL, default=DEFAULT_URL): str,
         vol.Required(CONF_USERNAME): str,
         vol.Required(CONF_PASSWORD): str,
     }
 )
 
 
-class HaFritzProfilesFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
-    """Config flow for https://github.com/mithomas/ha-fritzprofiles."""
+def _normalize_url(raw_url: str) -> str:
+    """Strip whitespace/trailing slash and prepend https:// if no scheme is given."""
+    url = raw_url.strip().rstrip("/")
+    if not url.startswith(("http://", "https://")):
+        url = f"https://{url}"
+    return url
+
+
+def _test_credentials(url: str, username: str, password: str) -> bool:
+    """Validate FRITZ!Box credentials in executor thread."""
+    try:
+        client = FritzProfileSwitch(url, username, password)
+        return client.check_credentials()
+    except Exception:
+        _LOGGER.exception("Unexpected error connecting to FRITZ!Box at %s", url)
+        return False
+
+
+class HaFritzProfilesConfigFlow(ConfigFlow, domain=DOMAIN):
+    """Handle a config flow for FRITZ!Box Access Profiles."""
 
     VERSION = 1
-    CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
 
-    def __init__(self):
-        """Initialize."""
-        self._errors = {}
-
-    async def async_step_user(self, user_input=None):
-        """Handle a flow initialized by the user."""
-        self._errors = {}
-
-        if self._async_current_entries():
-            return self.async_abort(reason="single_instance_allowed")
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Handle the initial step."""
+        errors: dict[str, str] = {}
 
         if user_input is not None:
-            valid = await self._test_credentials(
-                user_input[CONF_URL],
-                user_input[CONF_USERNAME],
-                user_input[CONF_PASSWORD],
+            url = _normalize_url(user_input[CONF_URL])
+            user_input[CONF_URL] = url
+            username = user_input[CONF_USERNAME]
+            password = user_input[CONF_PASSWORD]
+
+            valid = await self.hass.async_add_executor_job(
+                _test_credentials, url, username, password
             )
             if valid:
+                await self.async_set_unique_id(url)
+                self._abort_if_unique_id_configured()
                 return self.async_create_entry(
-                    title=f"FRITZ!Box ({user_input[CONF_USERNAME]} @ {user_input[CONF_URL]})",  # noqa: E501
+                    title=f"FRITZ!Box ({url})",
                     data=user_input,
                 )
-            self._errors["base"] = "auth"
 
-            return await self._show_config_form(user_input)
+            errors["base"] = "invalid_auth"
 
-        return await self._show_config_form(user_input)
-
-    async def _show_config_form(self, user_input):  # pylint: disable=unused-argument
-        """Shows the configuration form to edit location data."""
         return self.async_show_form(
             step_id="user",
-            data_schema=CONFIG_SCHEMA,
-            errors=self._errors,
-            description_placeholders={
-                "docs_url": "https://github.com/mithomas/ha-fritzprofiles",
-            },
+            data_schema=STEP_USER_DATA_SCHEMA,
+            errors=errors,
         )
 
-    async def _test_credentials(self, url, username, password) -> bool:
-        """Returns true if credentials is valid."""
-        try:
-            return await self.hass.async_add_executor_job(
-                FritzProfileSwitch(url, username, password).check_credentials
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Handle reconfiguration of an existing FRITZ!Box entry."""
+        errors: dict[str, str] = {}
+        reconfigure_entry = self._get_reconfigure_entry()
+
+        if user_input is not None:
+            url = _normalize_url(user_input[CONF_URL])
+            user_input[CONF_URL] = url
+            username = user_input[CONF_USERNAME]
+            password = user_input[CONF_PASSWORD]
+
+            valid = await self.hass.async_add_executor_job(
+                _test_credentials, url, username, password
             )
-        except (PermissionError, requests.RequestException):
-            return False
+            if valid:
+                return self.async_update_reload_and_abort(
+                    reconfigure_entry,
+                    data={
+                        CONF_URL: url,
+                        CONF_USERNAME: username,
+                        CONF_PASSWORD: password,
+                    },
+                )
+
+            errors["base"] = "invalid_auth"
+
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_URL,
+                        default=reconfigure_entry.data.get(CONF_URL, DEFAULT_URL),
+                    ): str,
+                    vol.Required(
+                        CONF_USERNAME,
+                        default=reconfigure_entry.data.get(CONF_USERNAME, ""),
+                    ): str,
+                    vol.Required(CONF_PASSWORD): str,
+                }
+            ),
+            errors=errors,
+        )

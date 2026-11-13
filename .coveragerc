@@ -1,3 +1,2 @@
 [run]
-source = custom_components
-omit = *.py
+source = custom_components/ha_fritzprofiles

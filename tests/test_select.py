@@ -1,173 +1,121 @@
-"""Test AVM FRITZ!Box Access Profiles select entities."""
+"""Unit tests for the FRITZ!Box Access Profiles select platform."""
 
-from unittest.mock import ANY, AsyncMock, MagicMock, patch
+from __future__ import annotations
 
-from homeassistant.components.select import (
-    DOMAIN as SELECT_DOMAIN,
-    SERVICE_SELECT_OPTION,
-)
-from homeassistant.const import ATTR_ENTITY_ID, ATTR_OPTION
-import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from unittest.mock import AsyncMock, MagicMock
 
 from custom_components.ha_fritzprofiles.const import DOMAIN
-from custom_components.ha_fritzprofiles.fritz_profile_switch import FritzProfileDevice
+from custom_components.ha_fritzprofiles.coordinator import (
+    HaFritzProfilesCoordinatorData,
+)
+from custom_components.ha_fritzprofiles.fritz_profile_switch import (
+    FritzProfileDevice,
+    FritzProfileDeviceData,
+)
 from custom_components.ha_fritzprofiles.select import (
-    HaFritzProfilesEntity,
+    FritzDeviceProfileSelect,
     async_setup_entry,
 )
 
 
-@pytest.fixture(name="coordinator")
-def coordinator_fixture(coordinator_data):
-    """Fixture for a mocked coordinator."""
+def _build_coordinator() -> MagicMock:
+    """Create a mock coordinator populated with sample devices and profiles."""
+    raw = FritzProfileDeviceData(
+        devices=[
+            FritzProfileDevice(
+                id="landevice935",
+                name="AC-Büro",
+                profile_id="filtprof3",
+                mac="B4:43:0D:B5:2A:1D",
+            ),
+            FritzProfileDevice(
+                id="landevice999",
+                name="Tablet",
+                profile_id="filtprof1",
+                mac=None,
+            ),
+        ],
+        profiles={
+            "filtprof1": "Standard",
+            "filtprof3": "Unbeschränkt",
+        },
+    )
     coordinator = MagicMock()
-    coordinator.data = coordinator_data
+    coordinator.data = HaFritzProfilesCoordinatorData(raw)
+    coordinator.client = MagicMock()
     coordinator.async_request_refresh = AsyncMock()
-    coordinator.hass = MagicMock()
     return coordinator
 
 
-def test_entity_properties_and_options(coordinator):
-    """Test basic entity metadata and options."""
-    device = FritzProfileDevice(id="id", name="iPhone", profile_id="profile1")
-    entity = HaFritzProfilesEntity(coordinator, device)
+async def test_select_setup_and_device_info() -> None:
+    """Test entity creation, unique_id, MAC connection, and parent via_device."""
+    coordinator = _build_coordinator()
+    hass = MagicMock()
+    hass.data = {DOMAIN: {"entry_123": coordinator}}
+    entry = MagicMock()
+    entry.entry_id = "entry_123"
 
-    assert entity.name == "iPhone"
-    assert entity.unique_id == "iPhone"
-    assert entity.current_option == "Standard"
-    assert set(entity.options) == {"Standard", "Limited"}
-    assert entity.icon == "mdi:web"
+    added_entities: list[FritzDeviceProfileSelect] = []
+    await async_setup_entry(hass, entry, added_entities.extend)
 
+    assert len(added_entities) == 2
 
-def test_handle_coordinator_update_updates_profile(coordinator):
-    """Test entity updates when coordinator data changes."""
-    device = FritzProfileDevice(id="id", name="iPhone", profile_id="profile1")
-    entity = HaFritzProfilesEntity(coordinator, device)
-    entity.hass = MagicMock()
-    entity.entity_id = "select.iphone"
-
-    coordinator.data.devices_by_name = {
-        "iPhone": FritzProfileDevice(id="id", name="iPhone", profile_id="profile2")
+    office_entity = added_entities[0]
+    assert office_entity.unique_id == "fritzprofile_select_landevice935"
+    assert office_entity.current_option == "Unbeschränkt"
+    assert office_entity.options == ["Standard", "Unbeschränkt"]
+    assert office_entity.device_info == {
+        "identifiers": {(DOMAIN, "landevice935")},
+        "connections": {("mac", "B4:43:0D:B5:2A:1D")},
+        "name": "AC-Büro",
+        "via_device": (DOMAIN, "entry_123"),
     }
 
-    entity._handle_coordinator_update()  # noqa: SLF001
-
-    assert entity.current_option == "Limited"
-
-
-def test_handle_coordinator_update_missing_device(coordinator):
-    """Test coordinator updates ignore missing devices."""
-    device = FritzProfileDevice(id="id", name="iPhone", profile_id="profile1")
-    entity = HaFritzProfilesEntity(coordinator, device)
-    entity.hass = MagicMock()
-    entity.entity_id = "select.iphone"
-    coordinator.data.devices_by_name = {}
-
-    entity._handle_coordinator_update()  # noqa: SLF001
-
-    assert entity.current_option == "Standard"
-    assert entity.device.id == "id"
+    tablet_entity = added_entities[1]
+    assert tablet_entity.device_info["connections"] == set()
+    assert tablet_entity.current_option == "Standard"
 
 
-@pytest.mark.asyncio
-async def test_async_select_option_calls_refresh(coordinator):
-    """Test select option triggers refresh and profile update."""
-    device = FritzProfileDevice(id="id", name="iPhone", profile_id="profile1")
-    entity = HaFritzProfilesEntity(coordinator, device)
-    entity.hass = MagicMock()
-    entity.entity_id = "select.iphone"
-    coordinator.client = MagicMock()
-    coordinator.hass.async_add_executor_job = AsyncMock()
+async def test_select_option_updates_profile_and_refreshes() -> None:
+    """Test selecting a profile calls client.set_device_profile and refreshes."""
+    coordinator = _build_coordinator()
+    hass = MagicMock()
+    hass.async_add_executor_job = AsyncMock(side_effect=lambda func, *args: func(*args))
 
-    with patch.object(entity, "async_write_ha_state"):
-        await entity.async_select_option("Limited")
+    device = coordinator.data.devices_by_id["landevice935"]
+    entity = FritzDeviceProfileSelect(
+        coordinator=coordinator,
+        entry_id="entry_123",
+        device=device,
+        profiles_by_id=coordinator.data.profiles_by_id,
+        profiles_by_name=coordinator.data.profiles_by_name,
+    )
+    entity.hass = hass
 
+    await entity.async_select_option("Standard")
+
+    coordinator.client.set_device_profile.assert_called_once_with(
+        "landevice935", "filtprof1"
+    )
     coordinator.async_request_refresh.assert_awaited_once()
-    coordinator.hass.async_add_executor_job.assert_awaited_once_with(
-        coordinator.client.set_device_profile, "id", "profile2"
-    )
-    assert entity.current_option == "Limited"
 
 
-@pytest.mark.asyncio
-async def test_select_service_calls_client(hass, mock_config, coordinator_data):
-    """Test select service calls update the Fritz client."""
-    config_entry = MockConfigEntry(domain=DOMAIN, data=mock_config, entry_id="test")
-    config_entry.add_to_hass(hass)
-
-    async def _run_job(func, *args):
-        func(*args)
-
-    with (
-        patch("custom_components.ha_fritzprofiles.asyncio.sleep", new=AsyncMock()),
-        patch(
-            "custom_components.ha_fritzprofiles.coordinator.HaFritzProfilesDataUpdateCoordinator._async_update_data",
-            new=AsyncMock(return_value=coordinator_data),
-        ),
-        patch(
-            "custom_components.ha_fritzprofiles.fritz_profile_switch.FritzProfileSwitch.set_device_profile",
-            autospec=True,
-        ) as set_device_profile,
-    ):
-        assert await hass.config_entries.async_setup(config_entry.entry_id)
-        await hass.async_block_till_done()
-
-        coordinator = hass.data[DOMAIN][config_entry.entry_id]
-        with patch.object(
-            coordinator.hass,
-            "async_add_executor_job",
-            new=AsyncMock(
-                side_effect=_run_job,
-            ),
-        ) as async_add_executor_job:
-            entity_id = "select.iphone"
-            state = hass.states.get(entity_id)
-            assert state
-            assert state.state == "Standard"
-
-            await hass.services.async_call(
-                SELECT_DOMAIN,
-                SERVICE_SELECT_OPTION,
-                service_data={ATTR_ENTITY_ID: entity_id, ATTR_OPTION: "Limited"},
-                blocking=True,
-            )
-
-    async_add_executor_job.assert_called()
-    set_device_profile.assert_called_once_with(ANY, "landevice1", "profile2")
-
-    updated_state = hass.states.get(entity_id)
-    assert updated_state.state == "Limited"
-    assert "options" in updated_state.attributes
-
-
-@pytest.mark.asyncio
-async def test_select_setup_entry_no_devices(hass, mock_config, coordinator_data):
-    """Test select setup skips when no devices are available."""
-    config_entry = MockConfigEntry(domain=DOMAIN, data=mock_config, entry_id="test")
-    config_entry.add_to_hass(hass)
-
-    coordinator_data.devices_by_name = {}
-    hass.data.setdefault(DOMAIN, {})[config_entry.entry_id] = MagicMock(
-        data=coordinator_data
+async def test_select_fallback_and_unknown_option() -> None:
+    """Test fallback option when data is missing and ignoring unknown options."""
+    coordinator = _build_coordinator()
+    device = coordinator.data.devices_by_id["landevice935"]
+    entity = FritzDeviceProfileSelect(
+        coordinator=coordinator,
+        entry_id="entry_123",
+        device=device,
+        profiles_by_id=coordinator.data.profiles_by_id,
+        profiles_by_name=coordinator.data.profiles_by_name,
     )
 
-    add_entities = MagicMock()
-    await async_setup_entry(hass, config_entry, add_entities)
+    # Selecting an unknown profile name should log an error and not call the API
+    await entity.async_select_option("NonExistentProfile")
+    coordinator.client.set_device_profile.assert_not_called()
 
-    add_entities.assert_called_once_with([])
-
-
-@pytest.mark.asyncio
-async def test_select_option_unknown_profile_raises(coordinator):
-    """Test selecting an unknown profile raises KeyError."""
-    device = FritzProfileDevice(id="id", name="iPhone", profile_id="profile1")
-    entity = HaFritzProfilesEntity(coordinator, device)
-    entity.hass = MagicMock()
-    entity.entity_id = "select.iphone"
-    coordinator.client = MagicMock()
-    coordinator.hass.async_add_executor_job = AsyncMock()
-    coordinator.data.profiles_by_name = {"Standard": "profile1"}
-
-    with patch.object(entity, "async_write_ha_state"), pytest.raises(KeyError):
-        await entity.async_select_option("Missing")
+    # Missing coordinator data falls back to "Standard"
+    coordinator.data = None
+    assert entity.current_option == "Standard"

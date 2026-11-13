@@ -1,23 +1,26 @@
-"""Custom integration for AVM FRITZ!Box device access profiles in Home Assistant.
+"""Custom integration to integrate FRITZ!Box Access Profiles with Home Assistant."""
 
-For more details about this integration, please see https://github.com/mithomas/ha-fritzprofiles
-"""
+from __future__ import annotations
 
-import asyncio
 import logging
+from typing import TYPE_CHECKING
 
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.core_config import Config
-from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers import config_validation as cv
+from homeassistant.const import CONF_PASSWORD, CONF_URL, CONF_USERNAME, Platform
+from homeassistant.helpers import device_registry as dr
+from homeassistant.loader import async_get_integration
 
-from .const import CONF_PASSWORD, CONF_URL, CONF_USERNAME, DOMAIN, PLATFORMS, VERSION
+from .const import CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL, DOMAIN, STARTUP_MESSAGE
 from .coordinator import HaFritzProfilesDataUpdateCoordinator
 from .fritz_profile_switch import FritzProfileSwitch
 
+if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.core import HomeAssistant
+    from homeassistant.core_config import Config
+
+PLATFORMS: list[Platform] = [Platform.SELECT]
+
 _LOGGER: logging.Logger = logging.getLogger(__package__)
-CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: Config) -> bool:
@@ -29,49 +32,50 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up this integration using UI."""
     if hass.data.get(DOMAIN) is None:
         hass.data.setdefault(DOMAIN, {})
-        _LOGGER.info("Starting up custom integration ha-fritzprofiles %s", VERSION)
+        integration = await async_get_integration(hass, DOMAIN)
+        _LOGGER.info(
+            STARTUP_MESSAGE,
+            integration.name,
+            integration.version,
+        )
 
-    username = entry.data.get(CONF_USERNAME)
-    password = entry.data.get(CONF_PASSWORD)
-    url = entry.data.get(CONF_URL)
+    username: str = entry.data[CONF_USERNAME]
+    password: str = entry.data[CONF_PASSWORD]
+    url: str = entry.data[CONF_URL]
+    scan_interval: int = entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
 
-    coordinator = HaFritzProfilesDataUpdateCoordinator(
-        hass, client=FritzProfileSwitch(url, username, password)
+    client = FritzProfileSwitch(url=url, user=username, password=password)
+
+    # Register the FRITZ!Box itself as parent hub device in the device registry
+    device_registry = dr.async_get(hass)
+    device_registry.async_get_or_create(
+        config_entry_id=entry.entry_id,
+        identifiers={(DOMAIN, entry.entry_id)},
+        manufacturer="FRITZ!",
+        model="FRITZ!Box",
+        name=f"FRITZ!Box ({url})",
+        configuration_url=url,
     )
 
-    # Wait a bit so login doesn't clash with the AVM FRITZ!SmartHome integration
-    # (which is likely also installed). Running at the same time causes the
-    # other one to timeout during HA start-up, requiring manual intervention.
-    # This means longer setup and start-up time here.
-    await asyncio.sleep(10)
-    await coordinator.async_refresh()
-
-    if not coordinator.last_update_success:
-        raise ConfigEntryNotReady
+    coordinator = HaFritzProfilesDataUpdateCoordinator(
+        hass=hass,
+        client=client,
+        scan_interval=scan_interval,
+        config_entry=entry,
+    )
+    await coordinator.async_config_entry_first_refresh()
 
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
-    for platform in PLATFORMS:
-        if entry.options.get(platform, True):
-            coordinator.platforms.append(platform)
-            await hass.config_entries.async_forward_entry_setups(entry, [platform])
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
-    entry.add_update_listener(async_reload_entry)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Handle removal of an entry."""
-    coordinator = hass.data[DOMAIN][entry.entry_id]
-    unloaded = all(
-        await asyncio.gather(
-            *[
-                hass.config_entries.async_forward_entry_unload(entry, platform)
-                for platform in PLATFORMS
-                if platform in coordinator.platforms
-            ]
-        )
-    )
+    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
         hass.data[DOMAIN].pop(entry.entry_id)
 
@@ -80,5 +84,4 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Reload config entry."""
-    await async_unload_entry(hass, entry)
-    await async_setup_entry(hass, entry)
+    await hass.config_entries.async_reload(entry.entry_id)

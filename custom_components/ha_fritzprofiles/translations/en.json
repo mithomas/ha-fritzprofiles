@@ -2,20 +2,50 @@
   "config": {
     "step": {
       "user": {
-        "title": "FRITZ!Box Device Access Profiles",
-        "description": "If you need help with the configuration, check the documentation at {docs_url}.",
+        "title": "FRITZ!Box Access Profiles",
+        "description": "Enter the connection details for your FRITZ!Box.",
         "data": {
-          "url": "URL",
+          "url": "FRITZ!Box URL (e.g. https://fritz.box)",
+          "username": "Username",
+          "password": "Password"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure FRITZ!Box Access Profiles",
+        "description": "Update the connection details or credentials for your FRITZ!Box.",
+        "data": {
+          "url": "FRITZ!Box URL",
           "username": "Username",
           "password": "Password"
         }
       }
     },
     "error": {
-      "auth": "Username/Password is wrong."
+      "cannot_connect": "Failed to connect to FRITZ!Box",
+      "invalid_auth": "Invalid authentication credentials",
+      "unknown": "Unexpected error occurred"
     },
     "abort": {
-      "single_instance_allowed": "Only a single instance is allowed."
+      "already_configured": "This FRITZ!Box is already configured",
+      "reconfigure_successful": "Configuration updated successfully"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "FRITZ!Box Profile Options",
+        "description": "Configure how frequently device profiles are polled from the FRITZ!Box.",
+        "data": {
+          "scan_interval": "Polling interval (seconds)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "select": {
+      "internet_profile": {
+        "name": "Internet profile"
+      }
     }
   }
 }

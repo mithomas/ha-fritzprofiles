@@ -1,191 +1,289 @@
-"""Client library for AVM FRITZ!Box device access profiles.
+"""Client library to read and update AVM FRITZ!Box device access profiles."""
 
-Parses kids_userlist.lua and loads the whole list in one call.
-
-Originally based on https://github.com/eifinger/fritz-switch-profiles by Florian
-Pigorsch, Kevin Eifinger & contributors.
-"""
+from __future__ import annotations
 
 from dataclasses import dataclass
 import hashlib
 import logging
+from typing import Any
 
 import lxml.etree
-import lxml.html
 import requests
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
 INVALID_SID = "0000000000000000"
-DATA_CELL_COLUMNS = 5
+BLOCKED_PROFILE_UID = "filtprof4996"
+HTTP_FORBIDDEN = 403
 
 
 @dataclass
 class FritzProfileDevice:
-    """Data class for a single device."""
+    """Data class representing a single network device."""
 
     id: str
-    """Examples: landevice4711 or user4711"""
-
     name: str
-    """Device name as listed in the FRITZ!Box web ui."""
-
     profile_id: str
-    """Example: filtprof4627"""
+    mac: str | None = None
 
 
 class FritzProfileDeviceData:
     """Data class holding the complete set of device profile data."""
 
-    devices: list[FritzProfileDevice]
-    profiles_by_id: dict[str, str]
-
-    def __init__(self, devices, profiles):
+    def __init__(
+        self,
+        devices: list[FritzProfileDevice],
+        profiles: dict[str, str],
+    ) -> None:
+        """Initialize device profile data container."""
         self.devices = devices
         self.profiles_by_id = profiles
 
 
 class FritzProfileSwitch:
-    """Client class for device profile loading."""
+    """Client class for reading and updating device profiles via REST API."""
 
-    def __init__(self, url, user, password):
-        self.url = url
+    def __init__(self, url: str, user: str, password: str) -> None:
+        """Initialize the FRITZ!Box REST API client."""
+        base = url.rstrip("/")
+        if not base.startswith(("http://", "https://")):
+            base = f"https://{base}"
+        self.url = base
         self.user = user
-        self.sid = INVALID_SID
         self.password = password
+        self.sid = INVALID_SID
 
-    def load_device_profiles(self) -> FritzProfileDeviceData:
-        """Performs login, loads all device profile data and performs logout."""
-        self._login()
-        devices, profiles = self._load_device_profiles()
-        self._logout()
-        return FritzProfileDeviceData(devices, profiles)
-
-    def _load_device_profiles(self):
-        devices = []
-
-        html = lxml.html.fromstring(self._load_device_profile_rawdata())
-        for i, row in enumerate(html.xpath('//table[@id="uiDevices"]/tr')):
-            cell = row.xpath("td")
-
-            if not _is_data_cell(cell):
-                continue
-
-            name = cell[0].get("title")
-
-            select = cell[3].xpath("select")
-            if not select:
-                select = cell[4].xpath("select")
-            if not select:
-                continue
-
-            device_id = select[0].xpath("@name")[0].split(":")[1]
-            profile = select[0].xpath("option[@selected]/@value")[0]
-
-            if i == 1:  # profiles look the same for each device
-                profiles_by_id = {
-                    o.get("value"): o.text_content() for o in select[0].xpath("option")
-                }
-                _LOGGER.info("Loaded %d profiles", len(profiles_by_id))
-
-            devices.append(
-                FritzProfileDevice(id=device_id, name=name, profile_id=profile)
-            )
-
-        _LOGGER.info("Loaded %d devices", len(devices))
-        return devices, profiles_by_id
-
-    def _load_device_profile_rawdata(self):
-        """Fetch and store device profiles."""
-        _LOGGER.info("Loading device data")
-        data = {
-            "xhr": 1,
-            "sid": self.sid,
-            "cancel": "",
-            "oldpage": "/internet/kids_userlist.lua",
+    def _headers(self) -> dict[str, str]:
+        """Build HTTP headers including active AVM-SID."""
+        return {
+            "AUTHORIZATION": f"AVM-SID {self.sid}",
+            "Client-Name": "WebGUI",
+            "Content-Type": "application/json",
+            "Accept": "*/*",
+            "Origin": self.url,
+            "Referer": f"{self.url}/",
         }
-        url = self.url + "/data.lua"
 
-        response = requests.post(url, data=data, allow_redirects=True, timeout=300)
-        response.raise_for_status()
-        return response.text
+    def _ensure_login(self) -> None:
+        """Reuse existing SID or authenticate via challenge-response if needed."""
+        if self.sid != INVALID_SID:
+            return
 
-    def set_device_profile(self, device_id, profile_id):
-        self._login()
-        self._set_device_profile(device_id, profile_id)
-        self._logout()
-
-    def _set_device_profile(self, device_id, profile_id):
-        """Update profiles on the FritzBox."""
-        _LOGGER.info("Setting device %s to profile %s", device_id, profile_id)
-        data = {
-            "xhr": 1,
-            "sid": self.sid,
-            "apply": "",
-            "oldpage": "/internet/kids_userlist.lua",
-            "profile:" + device_id: profile_id,
-        }
-        response = requests.post(
-            self.url + "/data.lua", data=data, allow_redirects=True, timeout=300
+        resp = requests.get(
+            f"{self.url}/login_sid.lua",
+            params={"version": "2"},
+            verify=False,
+            timeout=10,
         )
-        response.raise_for_status()
+        resp.raise_for_status()
+        sid, challenge = _get_sid_challenge(resp.content)
 
-    def check_credentials(self) -> bool:
-        self._login()
-
-        if self.sid == INVALID_SID:
-            return False
-
-        self._logout()
-        return True
-
-    def _login(self):
-        """Login and return session id."""
-        sid, challenge = _get_sid_challenge(self.url + "/login_sid.lua")
         if sid == INVALID_SID:
-            md5 = hashlib.md5()
-            md5.update(challenge.encode("utf-16le"))
-            md5.update("-".encode("utf-16le"))
-            md5.update(self.password.encode("utf-16le"))
-            response = challenge + "-" + md5.hexdigest()
-            url = (
-                self.url
-                + "/login_sid.lua?username="
-                + self.user
-                + "&response="
-                + response
+            response = _build_challenge_response(challenge, self.password)
+            login_resp = requests.get(
+                f"{self.url}/login_sid.lua",
+                params={"username": self.user, "response": response},
+                verify=False,
+                timeout=10,
             )
-            sid, challenge = _get_sid_challenge(url)
+            login_resp.raise_for_status()
+            sid, _ = _get_sid_challenge(login_resp.content)
+
         if sid == INVALID_SID:
             raise PermissionError(
-                f"Cannot login to {self.url} using the supplied credentials."
+                f"Authentication failed for {self.url} using provided credentials."
             )
 
-        _LOGGER.info("Logged into %s as %s", self.url, self.user)
         self.sid = sid
 
-    def _logout(self):
-        """Update profiles on the FritzBox."""
-        data = {
-            "xhr": 1,
-            "sid": self.sid,
-            "security:command/logout=": 42,
+    def _request_api(
+        self,
+        method: str,
+        endpoint: str,
+        payload: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Execute an HTTP request against the REST API with 403 session retry."""
+        self._ensure_login()
+        url = f"{self.url}/api/v0/generic/{endpoint}"
+
+        resp = requests.request(
+            method,
+            url,
+            json=payload,
+            headers=self._headers(),
+            verify=False,
+            timeout=30,
+        )
+
+        # Refresh SID once if the session expired on the FRITZ!Box
+        if resp.status_code == HTTP_FORBIDDEN:
+            _LOGGER.debug("Session expired on FRITZ!Box, re-authenticating")
+            self.sid = INVALID_SID
+            self._ensure_login()
+            resp = requests.request(
+                method,
+                url,
+                json=payload,
+                headers=self._headers(),
+                verify=False,
+                timeout=30,
+            )
+
+        resp.raise_for_status()
+        return resp.json() if resp.content else {}
+
+    def _parse_filter_profiles(self, profiles_raw: dict[str, Any]) -> dict[str, str]:
+        """Parse filter profiles response into a UID-to-name mapping."""
+        default_names = {
+            "filtprof1": "Standard",
+            "filtprof2": "Gast",
+            "filtprof3": "Unbeschränkt",
+            BLOCKED_PROFILE_UID: "Gesperrt",
         }
-        response = requests.post(self.url, data=data, allow_redirects=True, timeout=30)
-        response.raise_for_status()
-        _LOGGER.info("Logged out")
-        self.sid = INVALID_SID
+        profiles_by_id: dict[str, str] = {}
+        for profile in profiles_raw.get("profile", []):
+            uid = profile.get("UID")
+            if uid:
+                profiles_by_id[uid] = profile.get("name") or default_names.get(uid, uid)
+        profiles_by_id.setdefault(BLOCKED_PROFILE_UID, "Gesperrt")
+        return profiles_by_id
+
+    def _parse_user_mappings(
+        self, user_list: list[dict[str, Any]]
+    ) -> tuple[str, dict[str, str]]:
+        """Extract default profile UID and per-device profile assignments."""
+        default_profile = "filtprof1"
+        for user_entry in user_list:
+            if user_entry.get("type") == "3" or user_entry.get("name") == "(default)":
+                default_profile = user_entry.get("filter_profile_UID", "filtprof1")
+                break
+
+        device_to_profile: dict[str, str] = {}
+        for user_entry in user_list:
+            dev_uid = user_entry.get("landeviceUID")
+            if dev_uid:
+                if user_entry.get("disallowed") == "1":
+                    device_to_profile[dev_uid] = BLOCKED_PROFILE_UID
+                else:
+                    device_to_profile[dev_uid] = user_entry.get(
+                        "filter_profile_UID", default_profile
+                    )
+
+        return default_profile, device_to_profile
+
+    def load_device_profiles(self) -> FritzProfileDeviceData:
+        """Fetch all filter profiles, active user mappings, and network devices."""
+        profiles_raw = self._request_api("GET", "filter_profile")
+        profiles_by_id = self._parse_filter_profiles(profiles_raw)
+
+        user_raw = self._request_api("GET", "user")
+        default_profile, device_to_profile = self._parse_user_mappings(
+            user_raw.get("user", [])
+        )
+
+        devices_raw = self._request_api("GET", "landevice")
+        devices: list[FritzProfileDevice] = []
+
+        for dev in devices_raw.get("landevice", []):
+            dev_uid = dev.get("UID")
+            if not dev_uid:
+                continue
+
+            # Prioritize user-configured friendly_name over technical hostname
+            display_name = dev.get("friendly_name") or dev.get("name") or dev_uid
+            mac_address = dev.get("mac") or None
+            profile_id = device_to_profile.get(dev_uid, default_profile)
+
+            devices.append(
+                FritzProfileDevice(
+                    id=dev_uid,
+                    name=display_name,
+                    profile_id=profile_id,
+                    mac=mac_address,
+                )
+            )
+
+        _LOGGER.debug(
+            "Loaded %d profiles and %d devices via FRITZ!OS REST API",
+            len(profiles_by_id),
+            len(devices),
+        )
+        return FritzProfileDeviceData(devices=devices, profiles=profiles_by_id)
+
+    def set_device_profile(self, device_id: str, profile_id: str) -> None:
+        """Assign an access profile to a device UID (landeviceUID)."""
+        _LOGGER.info("Setting device %s to profile %s", device_id, profile_id)
+
+        user_raw = self._request_api("GET", "user")
+        user_uid: str | None = None
+        for user_entry in user_raw.get("user", []):
+            if user_entry.get("landeviceUID") == device_id:
+                user_uid = user_entry.get("UID")
+                break
+
+        is_blocked = profile_id == BLOCKED_PROFILE_UID
+
+        if user_uid:
+            # Update existing device profile rule via PUT
+            endpoint = f"user/user/{user_uid}"
+            if is_blocked:
+                payload: dict[str, Any] = {"disallowed": "1"}
+            else:
+                payload = {"filter_profile_UID": profile_id, "disallowed": "0"}
+            self._request_api("PUT", endpoint, payload=payload)
+        else:
+            # Create new device profile rule via POST
+            endpoint = "user/user"
+            payload = {
+                "landeviceUID": device_id,
+                "disallowed": "1" if is_blocked else "0",
+                "type": "1",
+            }
+            if not is_blocked:
+                payload["filter_profile_UID"] = profile_id
+            self._request_api("POST", endpoint, payload=payload)
+
+    def check_credentials(self) -> bool:
+        """Validate credentials against the FRITZ!Box."""
+        try:
+            self._ensure_login()
+        except (requests.RequestException, PermissionError, OSError):
+            return False
+        else:
+            return self.sid != INVALID_SID
 
 
-def _get_sid_challenge(url):
-    """Parse out sid and challenge from response of the login url."""
-    response = requests.get(url, allow_redirects=True, timeout=30)
-    data = lxml.etree.fromstring(response.content)  # pylint: disable=I1101
+def _build_challenge_response(challenge: str, password: str) -> str:
+    """Compute PBKDF2 (FRITZ!OS 7.24+/8+) or legacy MD5 challenge response."""
+    if challenge.startswith("2$"):
+        _, iter1, salt1, iter2, salt2 = challenge.split("$")
+        hash1 = hashlib.pbkdf2_hmac(
+            "sha256",
+            password.encode("utf-8"),
+            bytes.fromhex(salt1),
+            int(iter1),
+        )
+        hash2 = hashlib.pbkdf2_hmac(
+            "sha256",
+            hash1,
+            bytes.fromhex(salt2),
+            int(iter2),
+        )
+        return f"{salt2}${hash2.hex()}"
+
+    md5 = hashlib.md5()
+    md5.update(challenge.encode("utf-16le"))
+    md5.update(b"-")
+    md5.update(password.encode("utf-16le"))
+    return f"{challenge}-{md5.hexdigest()}"
+
+
+def _get_sid_challenge(content: bytes) -> tuple[str, str]:
+    """Extract SID and Challenge from login_sid.lua XML response."""
+    data = lxml.etree.fromstring(content)
     sid = data.xpath("//SessionInfo/SID/text()")[0]
     challenge = data.xpath("//SessionInfo/Challenge/text()")[0]
     return sid, challenge
-
-
-def _is_data_cell(cell) -> bool:
-    """Checks whether the given cell is a device-profile data cell."""
-    return cell and len(cell) == DATA_CELL_COLUMNS

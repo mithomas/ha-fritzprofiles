@@ -1,1 +1,1 @@
-"""Tests for AVM FRITZ!Box Access Profiles integration."""
+"""Tests for the FRITZ!Box Access Profiles integration."""

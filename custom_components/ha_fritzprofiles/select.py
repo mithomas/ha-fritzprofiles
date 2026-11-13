@@ -1,87 +1,115 @@
-"""HaFritzProfilesEntity class."""
+"""Select platform for ha_fritzprofiles backed by DataUpdateCoordinator."""
+
+from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 from homeassistant.components.select import SelectEntity
-from homeassistant.core import callback
+from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC, DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
+from .coordinator import HaFritzProfilesDataUpdateCoordinator
+
+if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+    from .fritz_profile_switch import FritzProfileDevice
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
 
-async def async_setup_entry(hass, entry, async_add_entities):
-    """Setup platform."""
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up the FRITZ!Box Profile select entities from a config entry."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities(
-        [
-            HaFritzProfilesEntity(coordinator, device)
-            for device in coordinator.data.devices_by_name.values()
-        ]
-    )
+
+    data = coordinator.data
+    devices = list(data.devices_by_id.values())
+    profiles_by_id = data.profiles_by_id
+    profiles_by_name = data.profiles_by_name
+
+    entities = [
+        FritzDeviceProfileSelect(
+            coordinator=coordinator,
+            entry_id=entry.entry_id,
+            device=device,
+            profiles_by_id=profiles_by_id,
+            profiles_by_name=profiles_by_name,
+        )
+        for device in devices
+    ]
+
+    async_add_entities(entities)
 
 
-class HaFritzProfilesEntity(CoordinatorEntity, SelectEntity):
-    """SelectEntity wrapping around a fritz profile device."""
+class FritzDeviceProfileSelect(
+    CoordinatorEntity[HaFritzProfilesDataUpdateCoordinator], SelectEntity
+):
+    """Representation of a network device internet access profile selector."""
 
-    def __init__(self, coordinator, device):
-        super().__init__(coordinator)
+    _attr_has_entity_name = True
+    _attr_translation_key = "internet_profile"
 
-        self.device = None
-        self._attr_current_option = None
-        self._attr_options = None
-
-        self._update_values(device)
-
-    @property
-    def unique_id(self):
-        # Device names are unique after coordinator de-duplication.
-        return self.device.name
-
-    @property
-    def name(self):
-        return self.device.name
-
-    @property
-    def icon(self):
-        return "mdi:web"
-
-    def _update_values(self, device) -> None:
-        self.device = device
-
-        self._attr_current_option = self.coordinator.data.profiles_by_id[
-            self.device.profile_id
-        ]
-        self._attr_options = list(self.coordinator.data.profiles_by_id.values())
-
-    @callback
-    def _handle_coordinator_update(self) -> None:
-        """Handle updated data from the coordinator."""
-        if self.unique_id in self.coordinator.data.devices_by_name:
-            self._update_values(self.coordinator.data.devices_by_name[self.unique_id])
-            self.schedule_update_ha_state()
-
-    async def async_select_option(  # pylint: disable=arguments-renamed
-        self, profile: str
+    def __init__(
+        self,
+        coordinator: HaFritzProfilesDataUpdateCoordinator,
+        entry_id: str,
+        device: FritzProfileDevice,
+        profiles_by_id: dict[str, str],
+        profiles_by_name: dict[str, str],
     ) -> None:
-        """Handles a new selection.
+        """Initialize the profile select entity."""
+        super().__init__(coordinator)
+        self._device_id = device.id
+        self._profiles_by_id = profiles_by_id
+        self._profiles_by_name = profiles_by_name
 
-        Performs a refresh first as device id might have changed after a new
-        profile has been set outside of HA. Device IDs are generally
-        "landeviceNNNN" when using the standard profile and "userNNNN" when using
-        a custom one.
+        # Unique ID based on physical landevice UID
+        self._attr_unique_id = f"fritzprofile_select_{device.id}"
+        self._attr_options = list(profiles_by_id.values())
 
-        Not doing so would mean that further profile changes are not possible
-        if there has been a user profile selected before.
-        """
-        _LOGGER.info("Selected profile '%s' for device %s", profile, self.unique_id)
-        await self.coordinator.async_request_refresh()
-        await self.coordinator.hass.async_add_executor_job(
-            self.coordinator.client.set_device_profile,
-            self.device.id,
-            self.coordinator.data.profiles_by_name[profile],
+        # Link entity to HA device registry (merges with existing MAC devices)
+        connections: set[tuple[str, str]] = set()
+        if device.mac:
+            connections.add((CONNECTION_NETWORK_MAC, device.mac))
+
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, device.id)},
+            connections=connections,
+            name=device.name,
+            via_device=(DOMAIN, entry_id),
         )
 
-        self._attr_current_option = profile
-        self.async_write_ha_state()
+    @property
+    def current_option(self) -> str | None:
+        """Return the currently active profile name from coordinator data."""
+        if (
+            self.coordinator.data
+            and self._device_id in self.coordinator.data.devices_by_id
+        ):
+            dev = self.coordinator.data.devices_by_id[self._device_id]
+            return self._profiles_by_id.get(dev.profile_id, "Standard")
+        return "Standard"
+
+    async def async_select_option(self, option: str) -> None:
+        """Change the access profile on the FRITZ!Box and refresh coordinator state."""
+        profile_id = self._profiles_by_name.get(option)
+        if not profile_id:
+            _LOGGER.error("Unknown profile selected: %s", option)
+            return
+
+        await self.hass.async_add_executor_job(
+            self.coordinator.client.set_device_profile,
+            self._device_id,
+            profile_id,
+        )
+
+        # Trigger immediate background coordinator refresh
+        await self.coordinator.async_request_refresh()
